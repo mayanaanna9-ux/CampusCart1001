@@ -6,6 +6,7 @@ import {Firestore, getFirestore} from 'firebase/firestore';
 import {firebaseConfig} from './config';
 
 export * from './provider';
+export * from './auth/use-user';
 
 // `initializeFirebase` is idempotent.
 export function initializeFirebase(): {
