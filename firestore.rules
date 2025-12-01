@@ -1,0 +1,125 @@
+/**
+ * Core Philosophy: This ruleset implements a hybrid security model tailored for a marketplace application.
+ * It combines a strict user-ownership model for private data with a public-read/owner-write model for
+ * shared data like item listings. This ensures user privacy while facilitating an open marketplace.
+ *
+ * Data Structure: Private user data (profiles, messages) is hierarchically organized and siloed under
+ * /users/{userId}. Publicly accessible data (items, categories, avatars) is stored in top-level
+ * collections for efficient querying and access control.
+ *
+ * Key Security Decisions:
+ * - User Profiles: Users have exclusive create, read, update, and delete (CRUD) access to their own
+ *   profile document. Listing all users is explicitly disabled to protect privacy.
+ * - Item Listings: All users (including unauthenticated ones) can read and list items. However, only the
+ *   authenticated seller can create, update, or delete their own item listings.
+ * - Messages: A user can only access messages stored within their own data tree. The application logic is
+ *   responsible for delivering a message to each participant's respective message collection.
+ * - Public Data: Categories and Avatars are treated as globally readable, read-only collections. Writes
+ *   are disabled, assuming they will be managed administratively.
+ *
+ * Denormalization for Authorization: To ensure fast and secure authorization, the `items` collection
+ * contains a denormalized `sellerId` field on each document. This allows security rules to verify
+ * ownership for write operations directly from the item document itself, avoiding slow and costly
+ * lookups to other collections.
+ *
+ * Structural Segregation: User-private data is strictly separated into the `/users` collection path.
+ * Public marketplace data is kept in top-level collections like `/items` and `/categories`. This
+ * segregation simplifies security rules and makes public listing queries safe and performant.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for concise and reusable logic
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description Manages user profile documents, granting full access only to the owner.
+     * @path /users/{userId}
+     * @allow A user creating their own profile. auth.uid: 'user123', (create) /users/user123
+     * @deny A user trying to read another user's profile. auth.uid: 'user456', (get) /users/user123
+     * @principle Restricts access to a user's own data tree, preventing unauthorized data exposure.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for privacy
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages item listings. Items are public to read, but only the seller can modify them.
+     * @path /items/{itemId}
+     * @allow Any user, signed in or not, reading an item. auth.uid: null, (get) /items/itemABC
+     * @deny A user trying to update an item they did not create. auth.uid: 'user456', (update) /items/itemABC
+     * @principle Enforces document ownership for writes while allowing public reads for the marketplace.
+     */
+    match /items/{itemId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.sellerId) && request.resource.data.sellerId == resource.data.sellerId;
+      allow delete: if isExistingOwner(resource.data.sellerId);
+    }
+
+    /**
+     * @description Provides public, read-only access to item categories.
+     * @path /categories/{categoryId}
+     * @allow Any user reading the 'Electronics' category. auth.uid: null, (get) /categories/electronics
+     * @deny Any user trying to create a new category. auth.uid: 'user123', (create) /categories/new-stuff
+     * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
+     */
+    match /categories/{categoryId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Provides public, read-only access to pre-defined user avatars.
+     * @path /avatars/{avatarId}
+     * @allow Any user reading an avatar. auth.uid: null, (get) /avatars/avatar1
+     * @deny Any user trying to delete an avatar. auth.uid: 'user123', (delete) /avatars/avatar1
+     * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
+     */
+    match /avatars/{avatarId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages messages within a user's private chat tree, enforcing path ownership.
+     * @path /users/{userId}/chats/{chatId}/messages/{messageId}
+     * @allow A user reading a message from their own chat history. auth.uid: 'user123', (get) /users/user123/chats/abc/messages/msg1
+     * @deny A user trying to read messages from another user's chat history. auth.uid: 'user456', (list) /users/user123/chats/abc/messages
+     * @principle Enforces strict path-based ownership for nested private data like direct messages.
+     */
+    match /users/{userId}/chats/{chatId}/messages/{messageId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.senderId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.senderId == resource.data.senderId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

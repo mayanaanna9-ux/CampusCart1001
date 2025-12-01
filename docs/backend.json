@@ -1,0 +1,290 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile on Campus Cart.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
+        },
+        "avatarId": {
+          "type": "string",
+          "description": "Reference to Avatar. (Relationship: Avatar 1:1 UserProfile).  This is used if the user chooses a pre-designed avatar."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or description of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName"
+      ]
+    },
+    "Item": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Item",
+      "type": "object",
+      "description": "Represents an item listed for sale on Campus Cart.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Item entity."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Reference to UserProfile of the seller. (Relationship: UserProfile 1:N Item)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the item."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the item."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Item)"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the item."
+        },
+        "condition": {
+          "type": "string",
+          "description": "Condition of the item (e.g., new, used, like new)."
+        },
+        "imageUrls": {
+          "type": "array",
+          "description": "URLs of the item's images.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "postedDate": {
+          "type": "string",
+          "description": "Date and time when the item was posted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "sellerId",
+        "name",
+        "description",
+        "categoryId",
+        "price",
+        "condition",
+        "imageUrls",
+        "postedDate"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category of items on Campus Cart.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category (e.g., Gadgets, Books, Clothes)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a direct message between users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Message entity."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to UserProfile of the sender. (Relationship: UserProfile 1:N Message as Sender)"
+        },
+        "receiverId": {
+          "type": "string",
+          "description": "Reference to UserProfile of the receiver. (Relationship: UserProfile 1:N Message as Receiver)"
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to Item. (Relationship: Item 1:N Message).  The item the message pertains to."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "senderId",
+        "receiverId",
+        "content",
+        "timestamp"
+      ]
+    },
+    "Avatar": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Avatar",
+      "type": "object",
+      "description": "Represents a pre-designed avatar that users can choose for their profile picture.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Avatar entity."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the avatar image.",
+          "format": "uri"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the avatar."
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the user can read/write their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/items/{itemId}",
+        "definition": {
+          "entityName": "Item",
+          "schema": {
+            "$ref": "#/backend/entities/Item"
+          },
+          "description": "Stores items for sale. Includes denormalized 'sellerId' for authorization independence.",
+          "params": [
+            {
+              "name": "itemId",
+              "description": "The unique ID of the item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores item categories.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique ID of the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stores direct messages between users. Uses hierarchical path. Path-based ownership ensures data is secured.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "chatId",
+              "description": "The unique ID of the chat."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique ID of the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/avatars/{avatarId}",
+        "definition": {
+          "entityName": "Avatar",
+          "schema": {
+            "$ref": "#/backend/entities/Avatar"
+          },
+          "description": "Stores pre-designed avatars.",
+          "params": [
+            {
+              "name": "avatarId",
+              "description": "The unique ID of the avatar."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Messages are in a subcollection `/users/{userId}/chats/{chatId}/messages/{messageId}` using path-based ownership. Avatars are stored under `/avatars/{avatarId}`.\n\n**Authorization Independence**: The `Item` document denormalizes the `sellerId`, which allows rules to determine ownership of an item directly from the item document without needing to read the user's profile. The message structure uses a hierarchical path. Denormalizing user information into messages (if needed in the future) would further enhance independence, but the current structure uses path-based ownership which is ideal.\n\n**QAPs (Rules are not Filters)**: Items are stored in a top-level `/items` collection. Queries can efficiently filter and list items without requiring complex security rules. Profile data is kept private under each user's document. Messages are similarly secured with path-based access.  The separation of concerns ensures that listing and filtering operations are secure and efficient."
+  }
+}
