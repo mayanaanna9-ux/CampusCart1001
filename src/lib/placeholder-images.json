@@ -2,39 +2,39 @@
   "placeholderImages": [
     {
       "id": "avatar1",
-      "description": "A cheerful cartoon sun avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1635805737704-58f7c9343717?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon character"
+      "description": "Placeholder avatar 1",
+      "imageUrl": "https://images.unsplash.com/photo-1703584449021-4cfdfe9650dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "avatar2",
-      "description": "A friendly cartoon robot avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1620712943543-959612836242?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon robot"
+      "description": "Placeholder avatar 2",
+      "imageUrl": "https://images.unsplash.com/photo-1728218948405-d749e7d1851e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "avatar3",
-      "description": "A happy cartoon cloud avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1634335541179-43c345b5e7d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon monster"
+      "description": "Placeholder avatar 3",
+      "imageUrl": "https://images.unsplash.com/photo-1658070781328-0c173542795f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "avatar4",
-      "description": "A playful cartoon ghost avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1622992855113-1b3992b4507e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjdXRlJ2JdY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon ghost"
+      "description": "Placeholder avatar 4",
+      "imageUrl": "https://images.unsplash.com/photo-1752323365464-192aff757dd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "avatar5",
-      "description": "A cute cartoon alien avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1620713797686-e5c8936cb7a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon alien"
+      "description": "Placeholder avatar 5",
+      "imageUrl": "https://images.unsplash.com/photo-1688587571105-c770775b2b42?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "avatar6",
-      "description": "A smiling cartoon planet avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1622397987979-33d3c267b243?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon planet"
+      "description": "Placeholder avatar 6",
+      "imageUrl": "https://images.unsplash.com/photo-1752323365464-192aff757dd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "placeholder avatar"
     },
     {
       "id": "book1",
@@ -51,7 +51,7 @@
     {
       "id": "gadget1",
       "description": "Modern headphones",
-      "imageUrl": "https://images.unsplash.com/photo-1637920357371-b95b71e028b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxoZWFkcGhvbmVzJTIwYXVkaW98ZW58MHx8fHwxNzY0NDk0MDMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1637920357371-b95b71e028b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxoZWFkcGhvbmVzJTIwYXVkaW98ZW58MHx8fHwxNzY0NDk0MDMwfDA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "headphones audio"
     },
     {
@@ -75,7 +75,7 @@
     {
       "id": "clothes2",
       "description": "A pair of sneakers",
-      "imageUrl": "https://images.unsplash.com/photo-1663179081594-a574d6e944d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzbmVha2VycyUyMHNob2VzfGVufDB8fHx8MTc2NDUyNjcxNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1663179081594-a574d6e944d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzbmVha2VycyUyMHNob2VzfGVufDB8fHx8MTc2NDUyNjcxNHww&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "sneakers shoes"
     },
     {
@@ -93,7 +93,7 @@
     {
       "id": "other2",
       "description": "A guitar",
-      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "guitar music"
     },
     {
@@ -129,7 +129,7 @@
     {
       "id": "item5_1",
       "description": "Gaming mouse",
-      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "gaming mouse"
     },
     {
