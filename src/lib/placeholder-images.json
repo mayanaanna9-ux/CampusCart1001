@@ -31,12 +31,6 @@
       "imageHint": "placeholder avatar"
     },
     {
-      "id": "avatar6",
-      "description": "Placeholder avatar 6",
-      "imageUrl": "https://images.unsplash.com/photo-1752323365464-192aff757dd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwbGFjZWhvbGRlciUyMGF2YXRhcnxlbnwwfHx8fDE3NjQ1NjcyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "placeholder avatar"
-    },
-    {
       "id": "book1",
       "description": "Stack of old books",
       "imageUrl": "https://images.unsplash.com/photo-1570084481076-c126a75515c9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxib29rcyUyMHN0YWNrfGVufDB8fHx8MTc2NDUzOTYzNnww&ixlib=rb-4.1.0&q=80&w=1080",
@@ -45,7 +39,7 @@
     {
       "id": "book2",
       "description": "Open textbook on a desk",
-      "imageUrl": "https://images.unsplash.com/photo-1676282824850-ba7df84c3b67?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxib29rJTIwZGVza3xlbnwwfHx8fDE3NjQ1Mjg5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1676282824850-ba7df84c3b67?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxib29rJTIwZGVza3xlbnwwfHx8fDE3NjQ1Mjg5NTl8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "book desk"
     },
     {
@@ -57,7 +51,7 @@
     {
       "id": "gadget2",
       "description": "A sleek smartphone",
-      "imageUrl": "https://images.unsplash.com/photo-1634320498239-497d37b8f1fd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzbWFydHBob25lJTIwbW9iaWxlfGVufDB8fHx8MTc2NDUwNTEzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1634320498239-497d37b8f1fd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzbWFydHBob25lJTIwbW9iaWxlfGVufDB8fHx8MTc2NDUwNTEzN3ww&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "smartphone mobile"
     },
     {
@@ -69,7 +63,7 @@
     {
       "id": "clothes1",
       "description": "A stylish hoodie",
-      "imageUrl": "https://images.unsplash.com/photo-1641377061384-61e0ce81f717?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxob29kaWUlMjBjbG90aGluZ3xlbnwwfHx8fDE3NjQ1ODExOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1641377061384-61e0ce81f717?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxob29kaWUlMjBjbG90aGluZ3xlbnwwfHx8fDE3NjQ1ODExOTV8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "hoodie clothing"
     },
     {
@@ -81,7 +75,7 @@
     {
       "id": "food1",
       "description": "A box of homemade cookies",
-      "imageUrl": "https://images.unsplash.com/photo-1651140477768-c5077d596017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjb29raWVzJTIwZm9vZHxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlibrb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1651140477768-c5077d596017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjb29raWVzJTIwZm9vZHxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "cookies food"
     },
     {
@@ -93,13 +87,13 @@
     {
       "id": "other2",
       "description": "A guitar",
-      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "guitar music"
     },
     {
       "id": "item1_1",
       "description": "Laptop on a wooden table",
-      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "laptop technology"
     },
     {
@@ -129,7 +123,7 @@
     {
       "id": "item5_1",
       "description": "Gaming mouse",
-      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "gaming mouse"
     },
     {
