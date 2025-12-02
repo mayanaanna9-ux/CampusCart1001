@@ -1,21 +1,21 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, PlusSquare, User, Bell } from 'lucide-react';
+import { Home, MessageSquare, PlusSquare, User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/home', icon: Home, label: 'Home' },
   { href: '/messages', icon: MessageSquare, label: 'Messages' },
   { href: '/sell', icon: PlusSquare, label: 'Sell' },
-  { href: '/notifications', icon: Bell, label: 'Alerts' },
+  { href: '/search', icon: Search, label: 'Search' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
-  const hasNotifications = true; // mock
 
   return (
     <nav className="fixed bottom-0 z-10 w-full border-t bg-background/80 backdrop-blur-md md:hidden">
@@ -34,9 +34,6 @@ export function BottomNav() {
                   isActive && 'text-primary'
                 )}
               />
-              {item.href === '/notifications' && hasNotifications && (
-                 <div className="absolute top-1 right-3 h-2 w-2 rounded-full bg-red-500"></div>
-              )}
               <span
                 className={cn(
                   'text-[10px] font-medium',

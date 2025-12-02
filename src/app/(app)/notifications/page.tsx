@@ -1,7 +1,8 @@
+
 import { UserAvatar } from '@/components/user-avatar';
 import { users, items } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
-import { MessageSquare, Tag, DollarSign } from 'lucide-react';
+import { MessageSquare, Tag, DollarSign, Search } from 'lucide-react';
 import Link from 'next/link';
 
 // Mock notifications data
@@ -49,40 +50,50 @@ export default function NotificationsPage() {
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
       <h1 className="font-headline text-3xl font-bold mb-6">Notifications</h1>
-      <Card>
-        <CardContent className="p-0">
-          <div className="flex flex-col">
-            {notifications.map((notif, index) => {
-              const user = users.find(u => u.id === notif.userId);
-              if (!user) return null;
+      {notifications.length > 0 ? (
+        <Card>
+            <CardContent className="p-0">
+            <div className="flex flex-col">
+                {notifications.map((notif, index) => {
+                const user = users.find(u => u.id === notif.userId);
+                if (!user) return null;
 
-              const timeAgo = new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-                Math.round((new Date(notif.timestamp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-                'day'
-              );
+                const timeAgo = new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
+                    Math.round((new Date(notif.timestamp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+                    'day'
+                );
 
-              return (
-                <Link key={notif.id} href={notif.type === 'new_message' ? '/messages' : `/items/${notif.itemId}`} className="block hover:bg-muted/50 transition-colors">
-                  <div className={`p-4 flex items-start gap-4 ${index < notifications.length -1 ? 'border-b' : ''}`}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <NotificationIcon type={notif.type} />
+                return (
+                    <Link key={notif.id} href={notif.type === 'new_message' ? '/messages' : `/items/${notif.itemId}`} className="block hover:bg-muted/50 transition-colors">
+                    <div className={`p-4 flex items-start gap-4 ${index < notifications.length -1 ? 'border-b' : ''}`}>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                            <NotificationIcon type={notif.type} />
+                        </div>
+                        <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                            <UserAvatar name={user.name} avatarUrl={user.avatarUrl} className="h-8 w-8" />
+                            <p className="text-sm">
+                            <span className="font-semibold">{user.name}</span> {notif.text}
+                            </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{timeAgo}</p>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <UserAvatar name={user.name} avatarUrl={user.avatarUrl} className="h-8 w-8" />
-                        <p className="text-sm">
-                          <span className="font-semibold">{user.name}</span> {notif.text}
-                        </p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{timeAgo}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                    </Link>
+                );
+                })}
+            </div>
+            </CardContent>
+        </Card>
+      ) : (
+        <div className="text-center py-20">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-4">
+                <Search className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold">No notifications yet</h2>
+            <p className="text-muted-foreground mt-2">Check back later for updates.</p>
+        </div>
+      )}
     </div>
   );
 }
