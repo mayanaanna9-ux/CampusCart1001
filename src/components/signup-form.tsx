@@ -56,11 +56,19 @@ export function SignUpForm() {
         });
         router.push('/setup-profile');
       } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Uh oh! Something went wrong.",
-          description: error.message || "Could not create account.",
-        });
+        if (error.code === 'auth/email-already-in-use') {
+          toast({
+            variant: "destructive",
+            title: "Email already exists",
+            description: "Please use a different email or sign in.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: error.message || "Could not create account.",
+          });
+        }
       }
   }
 
