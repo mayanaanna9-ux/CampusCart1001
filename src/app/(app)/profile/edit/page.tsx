@@ -147,7 +147,7 @@ export default function EditProfilePage() {
         
         setUploadPromise(promise);
       };
-      reader.readAsDataURL(file);
+      reader.readDataURL(file);
     }
   };
 
@@ -249,36 +249,58 @@ export default function EditProfilePage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                <div className="space-y-4">
                 <Label>Profile Picture</Label>
-                <div className="flex items-center gap-6">
-                    <Label htmlFor="picture-upload" className="cursor-pointer group relative">
-                      <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
-                      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Upload className="h-6 w-6 text-white" />
-                      </div>
-                    </Label>
-                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                <div className="flex items-start gap-4">
+                    <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                    
+                    <div className="flex-1 space-y-4">
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                            {avatars.map((avatar) => (
+                            <button
+                                type="button"
+                                key={avatar.id}
+                                onClick={() => handleAvatarSelect(avatar.imageUrl)}
+                                className={cn(
+                                'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
+                                currentPhotoURL === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
+                                )}
+                            >
+                                <Image
+                                src={avatar.imageUrl}
+                                alt={avatar.description}
+                                fill
+                                sizes="10vw"
+                                className="object-cover"
+                                data-ai-hint={avatar.imageHint}
+                                />
+                            </button>
+                            ))}
+                        </div>
 
-                    <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-                         {avatars.map((avatar) => (
-                          <button
-                            type="button"
-                            key={avatar.id}
-                            onClick={() => handleAvatarSelect(avatar.imageUrl)}
-                            className={cn(
-                              'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
-                              currentPhotoURL === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
-                            )}
-                          >
-                            <Image
-                              src={avatar.imageUrl}
-                              alt={avatar.description}
-                              fill
-                              sizes="10vw"
-                              className="object-cover"
-                              data-ai-hint={avatar.imageHint}
-                            />
-                          </button>
-                        ))}
+                         <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground">Or</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    {isUploading ? (
+                                        <p>Uploading...</p>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                                            <p className="text-xs text-muted-foreground">PNG, JPG</p>
+                                        </>
+                                    )}
+                                </div>
+                                <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                            </Label>
+                        </div> 
                     </div>
                 </div>
               </div>
