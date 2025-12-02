@@ -28,10 +28,13 @@ export function AvatarGrid() {
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadPromise, setUploadPromise] = useState<Promise<string> | null>(null);
+  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+
 
   const handleAvatarSelect = (url: string) => {
     setSelectedAvatarUrl(url);
     setUploadPromise(null); // Clear any pending upload if an avatar is selected
+    setUploadedImagePreview(null);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +44,8 @@ export function AvatarGrid() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setSelectedAvatarUrl(dataUrl); // Show preview
+        setUploadedImagePreview(dataUrl); // Show preview in the upload box
+        setSelectedAvatarUrl(dataUrl); // Select the uploaded image
         
         setIsUploading(true);
         const storageRef = ref(storage, `profile-pictures/${auth.currentUser!.uid}/${Date.now()}`);
@@ -128,7 +132,7 @@ export function AvatarGrid() {
                     onClick={() => handleAvatarSelect(avatar.imageUrl)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
-                      selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
+                      selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/ ৫০'
                     )}
                   >
                     <Image
@@ -153,28 +157,21 @@ export function AvatarGrid() {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="picture" className="mb-2 block text-center font-headline text-xl font-semibold">Upload your own</Label>
-               <div className="flex items-center justify-center w-full">
-                    <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            {selectedAvatarUrl && !avatars.find(a => a.imageUrl === selectedAvatarUrl) ? (
-                                <Image src={selectedAvatarUrl} alt="Uploaded preview" width={80} height={80} className="h-20 w-20 rounded-full object-cover" />
-                            ) : (
-                                <>
-                                    <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                    <p className="text-xs text-muted-foreground">PNG, JPG</p>
-                                </>
-                            )}
-                        </div>
-                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
-                    </Label>
-                </div> 
+            <div className='flex flex-col items-center gap-4'>
+                <Label htmlFor="picture-upload-btn" className="text-center font-headline text-xl font-semibold">Upload your own</Label>
+                {uploadedImagePreview && (
+                    <Image src={uploadedImagePreview} alt="Uploaded preview" width={96} height={96} className="h-24 w-24 rounded-full object-cover border-4 border-primary" />
+                )}
+                <Button asChild variant="secondary" className="w-full max-w-xs">
+                    <div>
+                        {isUploading ? 'Uploading...' : 'Upload Image'}
+                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                    </div>
+                </Button>
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl}>
-              {isUploading ? 'Uploading...' : 'Continue'}
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
+              Continue
             </Button>
           </div>
         </CardContent>

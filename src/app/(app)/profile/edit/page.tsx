@@ -186,10 +186,6 @@ export default function EditProfilePage() {
         };
         setDocumentNonBlocking(userDocRef, updatedProfileData, { merge: true });
 
-        toast({
-            title: 'Profile Updated',
-            description: 'Your profile has been successfully updated.',
-        });
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -228,7 +224,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const isSaveDisabled = !form.formState.isDirty;
+  const isSaveDisabled = !form.formState.isDirty && !isUploading;
 
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
@@ -246,7 +242,13 @@ export default function EditProfilePage() {
                <div className="space-y-4">
                 <Label>Profile Picture</Label>
                 <div className="flex items-start gap-4">
-                    <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                    <div className="relative">
+                        <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                        <Label htmlFor="picture-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                            <Upload className="h-6 w-6 text-white" />
+                        </Label>
+                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                    </div>
                     
                     <div className="flex-1 space-y-4">
                         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
@@ -282,19 +284,13 @@ export default function EditProfilePage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    {isUploading ? (
-                                        <p>Uploading...</p>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
-                                            <p className="text-xs text-muted-foreground">PNG, JPG</p>
-                                        </>
-                                    )}
-                                </div>
-                                <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                            <Label htmlFor="picture-upload-btn" className="w-full">
+                                <Button asChild variant="secondary" className="w-full" disabled={isUploading}>
+                                    <div className='w-full'>
+                                        {isUploading ? 'Uploading...' : 'Upload Image'}
+                                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                                    </div>
+                                </Button>
                             </Label>
                         </div> 
                     </div>
@@ -330,7 +326,7 @@ export default function EditProfilePage() {
               />
 
               <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled}>
-                {isUploading ? 'Updating...' : 'Save Changes'}
+                Save Changes
               </Button>
             </form>
           </Form>
@@ -365,5 +361,3 @@ export default function EditProfilePage() {
     </div>
   );
 }
-
-    
