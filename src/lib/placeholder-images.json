@@ -2,39 +2,39 @@
   "placeholderImages": [
     {
       "id": "avatar1",
-      "description": "Cute cat avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1754609468738-226c1c88d164?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxhdmF0YXIlMjBjYXR8ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar cat"
+      "description": "A cheerful cartoon sun avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1622397987974-9351581a6e9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon sun"
     },
     {
       "id": "avatar2",
-      "description": "Cute dog avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1676873261959-173b91552b0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhdmF0YXIlMjBkb2d8ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar dog"
+      "description": "A friendly cartoon robot avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1620712943543-959612836242?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon robot"
     },
     {
       "id": "avatar3",
-      "description": "Cute panda avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1677242792348-974dab51ceac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhdmF0YXIlMjBwYW5kYXxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar panda"
+      "description": "A happy cartoon cloud avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1622992855145-35de08139e70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon cloud"
     },
     {
       "id": "avatar4",
-      "description": "Cute fox avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1644125003580-ec6e1afbdd5f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhdmF0YXIlMjBmb3h8ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar fox"
+      "description": "A playful cartoon ghost avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1622992855113-1b3992b4507e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjdXRlJ2JdY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon ghost"
     },
     {
       "id": "avatar5",
-      "description": "Cute robot avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1641312874336-6279a832a3dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdmF0YXIlMjByb2JvdHxlbnwwfHx8fDE3NjQ1MTU0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar robot"
+      "description": "A cute cartoon alien avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1620713797686-e5c8936cb7a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon alien"
     },
     {
       "id": "avatar6",
-      "description": "Cute alien avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1747422220752-fc2f44d098ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhdmF0YXIlMjBhbGllbnxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "avatar alien"
+      "description": "A smiling cartoon planet avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1622397987979-33d3c267b243?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon planet"
     },
     {
       "id": "book1",
@@ -81,7 +81,7 @@
     {
       "id": "food1",
       "description": "A box of homemade cookies",
-      "imageUrl": "https://images.unsplash.com/photo-1651140477768-c5077d596017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjb29raWVzJTIwZm9vZHxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1651140477768-c5077d596017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjb29raWVzJTIwZm9vZHxlbnwwfHx8fDE3NjQ1OTMzODN8MA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "cookies food"
     },
     {
@@ -93,49 +93,49 @@
     {
       "id": "other2",
       "description": "A guitar",
-      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1686895053101-3cde08f5f667?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxndWl0YXIlMjBtdXNpY3xlbnwwfHx8fDE3NjQ1NzYzNTF8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "guitar music"
     },
     {
       "id": "item1_1",
       "description": "Laptop on a wooden table",
-      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "laptop technology"
     },
     {
       "id": "item1_2",
       "description": "Close-up of laptop keyboard",
-      "imageUrl": "https://images.unsplash.com/photo-1719303839356-5e00f6d97efd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxrZXlib2FyZCUyMGNsb3NlLXVwfGVufDB8fHx8MTc2NDU5MzM4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1719303839356-5e00f6d97efd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxrZXlib2FyZCUyMGNsb3NlLXVwfGVufDB8fHx8MTc2NDU5MzM4M3ww&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "keyboard close-up"
     },
     {
       "id": "item2_1",
       "description": "A collection of novels",
-      "imageUrl": "https://images.unsplash.com/photo-1761319114926-ef932912fa37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxib29rcyUyMGNvbGxlY3Rpb258ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1761319114926-ef932912fa37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxib29rcyUyMGNvbGxlY3Rpb258ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "books collection"
     },
     {
       "id": "item3_1",
       "description": "A warm winter jacket",
-      "imageUrl": "https://images.unsplash.com/photo-1630797160982-553facf1c3cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxqYWNrZXQlMjBjbG90aGluZ3xlbnwwfHx8fDE3NjQ1MjI0Mjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1630797160982-553facf1c3cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxqYWNrZXQlMjBjbG90aGluZ3xlbnwwfHx8fDE3NjQ1MjI0Mjd8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "jacket clothing"
     },
     {
       "id": "item4_1",
       "description": "A fresh pizza",
-      "imageUrl": "https://images.unsplash.com/photo-1666040401528-c8066902d8b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaXp6YSUyMGZvb2R8ZW58MHx8fHwxNzY0NDg4NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1666040401528-c8066902d8b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaXp6YSUyMGZvb2R8ZW58MHx8fHwxNzY0NDg4NTU2fDA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "pizza food"
     },
     {
       "id": "item5_1",
       "description": "Gaming mouse",
-      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1628832307345-7404b47f1751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjQ1MTQxODB8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "gaming mouse"
     },
     {
       "id": "item6_1",
       "description": "Chemistry textbook",
-      "imageUrl": "https://images.unsplash.com/photo-1725870976697-938e9fdc012b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx0ZXh0Ym9vayUyMHNjaWVuY2V8ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1725870976697-938e9fdc012b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx0ZXh0Ym9vayUyMHNjaWVuY2V8ZW58MHx8fHwxNzY0NTkzMzgzfDA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "textbook science"
     }
   ]
