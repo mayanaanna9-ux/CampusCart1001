@@ -192,20 +192,11 @@ export default function EditProfilePage() {
                         ))}
                     </div>
                 </div>
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">Or</span>
-                    </div>
-                </div>
-                 <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PNG or JPG (MAX. 800x800px)</p>
-                    </div>
+                
+                 <Label htmlFor="picture-upload" className="w-full">
+                    <Button variant="destructive" className="w-full bg-red-300 hover:bg-red-400 text-red-900" asChild>
+                        <span><Upload className="mr-2 h-4 w-4" /> Upload Image</span>
+                    </Button>
                     <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
                 </Label> 
               </div>
