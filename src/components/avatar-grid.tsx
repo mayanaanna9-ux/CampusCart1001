@@ -25,12 +25,24 @@ export function AvatarGrid() {
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setSelectedAvatarUrl(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleContinue = async () => {
     if (!auth || !auth.currentUser || !selectedAvatarUrl || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'You must be signed in and select an avatar.',
+        description: 'You must be signed in and select an avatar or upload an image.',
       });
       return;
     }
@@ -109,11 +121,17 @@ export function AvatarGrid() {
                <div className="flex items-center justify-center w-full">
                     <Label htmlFor="picture-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 800x400px)</p>
+                            {selectedAvatarUrl && !avatars.find(a => a.imageUrl === selectedAvatarUrl) ? (
+                                <Image src={selectedAvatarUrl} alt="Uploaded preview" width={80} height={80} className="h-20 w-20 rounded-full object-cover" />
+                            ) : (
+                                <>
+                                    <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 800x400px)</p>
+                                </>
+                            )}
                         </div>
-                        <Input id="picture-upload" type="file" className="hidden" />
+                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
                     </Label>
                 </div> 
             </div>

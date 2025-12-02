@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -76,7 +77,6 @@ export default function EditProfilePage() {
   const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
   
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
-  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,9 +97,20 @@ export default function EditProfilePage() {
   const currentPhotoURL = form.watch('profilePictureUrl');
 
   const handleAvatarSelect = (url: string) => {
-    setSelectedAvatarUrl(url);
     form.setValue('profilePictureUrl', url, { shouldValidate: true, shouldDirty: true });
   }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth || !auth.currentUser || !firestore) {
@@ -120,6 +131,7 @@ export default function EditProfilePage() {
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
         const updatedProfileData = {
             id: auth.currentUser.uid,
+            email: auth.currentUser.email,
             displayName,
             bio,
             profilePictureUrl,
@@ -194,7 +206,7 @@ export default function EditProfilePage() {
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                         <p className="text-xs text-muted-foreground">PNG or JPG (MAX. 800x800px)</p>
                     </div>
-                    <Input id="picture-upload" type="file" className="hidden" />
+                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
                 </Label> 
               </div>
 
