@@ -1,3 +1,4 @@
+
 'use client';
 
 import { items } from '@/lib/data';
@@ -16,13 +17,13 @@ import Link from 'next/link';
 function ProfileSkeleton() {
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
-      <div className="flex flex-col items-center space-y-4 mb-8">
+      <div className="flex items-center gap-6 mb-8">
         <Skeleton className="h-28 w-28 rounded-full" />
-        <div className="text-center space-y-2">
+        <div className="space-y-3">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-5 w-56" />
+          <Skeleton className="h-10 w-36" />
         </div>
-        <Skeleton className="h-10 w-36" />
       </div>
        <Tabs defaultValue="selling" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -59,7 +60,6 @@ export default function ProfilePage() {
     return <ProfileSkeleton />;
   }
   
-  // Create a user object from auth details, then enhance with profile data if it exists.
   const currentUser: User = {
     id: authUser.uid,
     name: userProfile?.displayName || authUser.displayName || authUser.email || 'User',
@@ -69,21 +69,25 @@ export default function ProfilePage() {
   // This is mock data and should be replaced with a firestore query
   const userItems = currentUser ? items.filter(item => item.sellerId === currentUser.id) : [];
 
+  const joinDate = new Date(authUser?.metadata.creationTime || Date.now());
+
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
-      <div className="flex flex-col items-center space-y-4 mb-8">
+      <div className="flex flex-col items-center space-y-4 mb-8 md:flex-row md:items-start md:space-y-0 md:space-x-6 md:items-center">
         <div className="relative">
             <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatarUrl} className="h-28 w-28 border-4 border-card" />
         </div>
-        <div className="text-center">
+        <div className="flex-1 text-center md:text-left">
             <h1 className="font-headline text-3xl font-bold">{currentUser.name}</h1>
-            <p className="text-muted-foreground">Joined {new Date(authUser?.metadata.creationTime || Date.now()).getFullYear()}</p>
+            <p className="text-sm text-muted-foreground">
+              Joined {joinDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <Button variant="outline" asChild className="mt-4">
+              <Link href="/profile/edit">
+                <Settings className="mr-2 h-4 w-4" /> Edit Profile
+              </Link>
+            </Button>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/profile/edit">
-            <Settings className="mr-2 h-4 w-4" /> Edit Profile
-          </Link>
-        </Button>
       </div>
 
       <Tabs defaultValue="selling" className="w-full">
