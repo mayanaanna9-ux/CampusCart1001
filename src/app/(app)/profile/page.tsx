@@ -11,6 +11,7 @@ import { doc } from 'firebase/firestore';
 import type { User as AuthUser } from 'firebase/auth';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 function ProfileSkeleton() {
   return (
@@ -78,8 +79,10 @@ export default function ProfilePage() {
             <h1 className="font-headline text-3xl font-bold">{currentUser.name}</h1>
             <p className="text-muted-foreground">Joined {new Date(authUser?.metadata.creationTime || Date.now()).getFullYear()}</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link href="/profile/edit">
             <Settings className="mr-2 h-4 w-4" /> Edit Profile
+          </Link>
         </Button>
       </div>
 
