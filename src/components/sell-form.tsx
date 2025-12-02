@@ -84,59 +84,56 @@ export function SellForm() {
         return;
     }
     setIsSubmitting(true);
-    
-    try {
-        const uploadedImageUrls: string[] = [];
+    router.push('/home');
 
-        // Upload images to Firebase Storage
-        for (const image of values.imageUrls) {
-            // image is a local blob URL, fetch it to get the data
-            const response = await fetch(image);
-            const blob = await response.blob();
-            const dataUrl = await new Promise<string>(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
+    const backgroundUpload = async () => {
+        try {
+            const uploadedImageUrls: string[] = [];
+
+            for (const image of values.imageUrls) {
+                const response = await fetch(image);
+                const blob = await response.blob();
+                const dataUrl = await new Promise<string>(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+
+                const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
+                const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+                const downloadUrl = await getDownloadURL(uploadResult.ref);
+                uploadedImageUrls.push(downloadUrl);
+            }
+            
+            const itemsCollection = collection(firestore, 'items');
+            await addDoc(itemsCollection, {
+                name: values.name,
+                description: values.description,
+                category: values.category,
+                price: values.price,
+                condition: values.condition,
+                sellerId: user.uid,
+                imageUrls: uploadedImageUrls,
+                postedAt: serverTimestamp(),
             });
 
-            const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
-            const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-            const downloadUrl = await getDownloadURL(uploadResult.ref);
-            uploadedImageUrls.push(downloadUrl);
+            toast({
+                title: "Item Posted!",
+                description: `${values.name} is now available for sale.`,
+            });
+        } catch(error: any) {
+            console.error("Error posting item:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Upload Failed',
+                description: error.message || 'There was an error posting your item.',
+            });
+        } finally {
+            // This component will be unmounted, so no need to set isSubmitting to false
         }
-        
-        // Add item to Firestore
-        const itemsCollection = collection(firestore, 'items');
-        await addDoc(itemsCollection, {
-            name: values.name,
-            description: values.description,
-            category: values.category,
-            price: values.price,
-            condition: values.condition,
-            sellerId: user.uid,
-            imageUrls: uploadedImageUrls,
-            postedAt: serverTimestamp(), // Use server timestamp
-        });
-
-        toast({
-            title: "Item Posted!",
-            description: `${values.name} is now available for sale.`,
-        });
-
-        form.reset();
-        setImagePreviews([]);
-        router.push('/home'); // Redirect to home to see the new item
-
-    } catch(error: any) {
-        console.error("Error posting item:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Upload Failed',
-            description: error.message || 'There was an error posting your item.',
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
+    };
+    
+    backgroundUpload();
   }
 
   return (
@@ -289,5 +286,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
