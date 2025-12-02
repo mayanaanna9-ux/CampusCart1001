@@ -76,10 +76,7 @@ export function AvatarGrid() {
       return;
     }
     
-    toast({
-      title: 'Setting up your profile...',
-      description: 'Please wait a moment.',
-    });
+    router.push('/home');
 
     try {
       let finalAvatarUrl = selectedAvatarUrl;
@@ -103,12 +100,6 @@ export function AvatarGrid() {
       const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
       setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 
-      toast({
-        title: 'Profile updated!',
-        description: 'Your avatar has been set.',
-      });
-
-      router.push('/home');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -132,7 +123,7 @@ export function AvatarGrid() {
                     onClick={() => handleAvatarSelect(avatar.imageUrl)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
-                      selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/ ৫০'
+                      selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
                     )}
                   >
                     <Image
@@ -162,12 +153,16 @@ export function AvatarGrid() {
                 {uploadedImagePreview && (
                     <Image src={uploadedImagePreview} alt="Uploaded preview" width={96} height={96} className="h-24 w-24 rounded-full object-cover border-4 border-primary" />
                 )}
-                <Button asChild variant="secondary" className="w-full max-w-xs">
-                    <div>
-                        {isUploading ? 'Uploading...' : 'Upload Image'}
-                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
-                    </div>
-                </Button>
+                <div className="flex justify-center">
+                    <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
+                        <Button asChild variant="destructive" className="w-full" disabled={isUploading}>
+                            <div className='w-full'>
+                                {isUploading ? 'Uploading...' : 'Upload Image'}
+                                <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                            </div>
+                        </Button>
+                    </Label>
+                </div>
             </div>
 
             <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
