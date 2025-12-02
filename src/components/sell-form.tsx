@@ -45,7 +45,6 @@ export function SellForm() {
     toast({
       title: "Item Posted!",
       description: `${values.itemName} is now available for sale.`,
-      className: 'bg-green-500 text-white',
     });
     form.reset();
   }
@@ -171,7 +170,7 @@ export function SellForm() {
               )}
             />
 
-            <Button type="submit" size="lg" className="w-full font-bold">Post Item</Button>
+            <Button type="submit" size="lg" className="w-full font-bold">Sell</Button>
           </form>
         </Form>
       </CardContent>
