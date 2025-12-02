@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -18,8 +19,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Upload } from 'lucide-react';
+import { ImagePlus, Upload, X } from 'lucide-react';
 import { Label } from './ui/label';
+import { useState } from 'react';
+import Image from 'next/image';
 
 const formSchema = z.object({
   itemName: z.string().min(3, 'Item name must be at least 3 characters long.'),
@@ -27,18 +30,50 @@ const formSchema = z.object({
   category: z.enum(['gadgets', 'books', 'clothes', 'food', 'other']),
   price: z.coerce.number().positive('Price must be a positive number.'),
   condition: z.enum(['new', 'used-like-new', 'used-good', 'used-fair']),
+  images: z.array(z.string()).optional(),
 });
 
 export function SellForm() {
   const { toast } = useToast();
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       itemName: '',
       description: '',
       price: 0,
+      images: [],
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newPreviews: string[] = [];
+      const currentPreviews = form.getValues('images') || [];
+      
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === files.length) {
+            const allPreviews = [...currentPreviews, ...newPreviews];
+            form.setValue('images', allPreviews);
+            setImagePreviews(allPreviews);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const currentPreviews = [...imagePreviews];
+    currentPreviews.splice(index, 1);
+    setImagePreviews(currentPreviews);
+    form.setValue('images', currentPreviews);
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values);
@@ -47,6 +82,7 @@ export function SellForm() {
       description: `${values.itemName} is now available for sale.`,
     });
     form.reset();
+    setImagePreviews([]);
   }
 
   return (
@@ -59,21 +95,30 @@ export function SellForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
              <div>
                 <Label>Item Images</Label>
-                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-input px-6 py-10">
+                <div className="mt-2 grid grid-cols-3 gap-4">
+                  {imagePreviews.map((src, index) => (
+                    <div key={index} className="relative aspect-square">
+                      <Image src={src} alt={`Preview ${index}`} fill className="rounded-lg object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Label htmlFor="file-upload" className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-card hover:bg-muted/50">
                     <div className="text-center">
-                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <div className="mt-4 flex text-sm leading-6 text-muted-foreground">
-                        <Label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:text-primary/80"
-                        >
-                        <span>Upload files</span>
-                        <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple />
-                        </Label>
-                        <p className="pl-1">or drag and drop</p>
+                        <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground" />
+                        <span className="mt-2 block text-sm font-medium text-muted-foreground">
+                            Upload
+                        </span>
                     </div>
-                    <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
-                    </div>
+                     <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} accept="image/png, image/jpeg, image/gif"/>
+                  </Label>
                 </div>
             </div>
             
