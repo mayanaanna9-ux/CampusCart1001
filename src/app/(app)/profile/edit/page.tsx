@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { updateProfile, deleteUser } from 'firebase/auth';
+import { updateProfile, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, getCredentialFromError } from 'firebase/auth';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
@@ -35,12 +34,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
   bio: z.string().max(160, 'Bio cannot exceed 160 characters.').optional(),
   profilePictureUrl: z.string().url('Invalid URL').optional(),
+});
+
+const reauthSchema = z.object({
+  password: z.string().min(1, 'Password is required.'),
 });
 
 function EditProfileSkeleton() {
@@ -83,6 +87,7 @@ export default function EditProfilePage() {
   const { user: authUser, loading: userLoading } = useUser();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadPromise, setUploadPromise] = useState<Promise<string> | null>(null);
+  const [showReauthDialog, setShowReauthDialog] = useState(false);
 
 
   const userDocRef = useMemoFirebase(() => {
@@ -102,6 +107,11 @@ export default function EditProfilePage() {
         profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || ''
     },
     mode: 'onChange'
+  });
+
+  const reauthForm = useForm<z.infer<typeof reauthSchema>>({
+    resolver: zodResolver(reauthSchema),
+    defaultValues: { password: '' },
   });
   
   const isLoading = userLoading || profileLoading;
@@ -195,6 +205,31 @@ export default function EditProfilePage() {
     }
   }
 
+  const performDeletion = async () => {
+    if (!auth || !auth.currentUser || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
+      return;
+    }
+    try {
+      const user = auth.currentUser;
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await deleteDoc(userDocRef);
+      await deleteUser(user);
+      toast({
+        title: 'Account Deleted',
+        description: 'Your Campus Cart account has been permanently deleted.',
+      });
+      router.push('/');
+    } catch (error: any) {
+      console.error("Deletion final step failed:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: 'Could not delete account. Please try again.',
+      });
+    }
+  }
+
   async function handleDeleteAccount() {
     if (!auth || !auth.currentUser || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
@@ -202,30 +237,57 @@ export default function EditProfilePage() {
     }
 
     try {
-        const user = auth.currentUser;
-        // First, delete the user's document from Firestore.
-        const userDocRef = doc(firestore, 'users', user.uid);
-        await deleteDoc(userDocRef);
-        
-        // Then, delete the user from Firebase Authentication. This only deletes the user
-        // from this app's authentication system, not from their Google account or other providers.
-        await deleteUser(user);
-
+      // First attempt to delete the user
+      await performDeletion();
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
         toast({
-            title: 'Account Deleted',
-            description: 'Your Campus Cart account has been permanently deleted.',
+          variant: 'destructive',
+          title: 'Action Required',
+          description: 'Please re-authenticate to delete your account.',
         });
-        router.push('/');
+        setShowReauthDialog(true);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Deletion Failed',
+          description: error.message || 'An unexpected error occurred while deleting your account.',
+        });
+      }
+    }
+  }
+  
+  async function handleReauthenticate(values: z.infer<typeof reauthSchema>) {
+    if (!auth || !auth.currentUser || !auth.currentUser.email) return;
+
+    try {
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, values.password);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      setShowReauthDialog(false);
+      await performDeletion();
+    } catch (error) {
+      reauthForm.setError('password', { type: 'manual', message: 'Incorrect password. Please try again.'});
+    }
+  }
+
+  async function handleGoogleReauth() {
+    if (!auth || !auth.currentUser) return;
+    try {
+        const provider = new GoogleAuthProvider();
+        await reauthenticateWithPopup(auth.currentUser, provider);
+        setShowReauthDialog(false);
+        await performDeletion();
     } catch (error: any) {
         toast({
             variant: 'destructive',
-            title: 'Deletion Failed',
-            description: error.message || 'An unexpected error occurred while deleting your account.',
+            title: 'Re-authentication Failed',
+            description: 'Could not re-authenticate with Google. Please try again.',
         });
     }
   }
 
   const isSaveDisabled = !form.formState.isDirty && !isUploading;
+  const isEmailProvider = authUser?.providerData.some(p => p.providerId === 'password');
 
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
@@ -359,6 +421,48 @@ export default function EditProfilePage() {
              </div>
         </CardFooter>
       </Card>
+
+      <Dialog open={showReauthDialog} onOpenChange={setShowReauthDialog}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Confirm Your Identity</DialogTitle>
+                <DialogDescription>
+                    For your security, please confirm your identity before deleting your account.
+                </DialogDescription>
+            </DialogHeader>
+            {isEmailProvider ? (
+                <Form {...reauthForm}>
+                    <form onSubmit={reauthForm.handleSubmit(handleReauthenticate)} className="space-y-4">
+                        <FormField
+                            control={reauthForm.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="submit" variant="destructive" disabled={reauthForm.formState.isSubmitting}>
+                                {reauthForm.formState.isSubmitting ? 'Verifying...' : 'Confirm Deletion'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            ) : (
+                <DialogFooter>
+                    <Button onClick={handleGoogleReauth} variant="destructive">
+                        Re-authenticate with Google
+                    </Button>
+                </DialogFooter>
+            )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+
+    
