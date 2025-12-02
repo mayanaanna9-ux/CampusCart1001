@@ -89,7 +89,7 @@ export function SignUpForm() {
         toast({
             title: "Signed in with Google!",
         });
-        router.push('/setup-profile');
+        router.push('/home');
     } catch (error: any) {
         toast({
             variant: "destructive",
