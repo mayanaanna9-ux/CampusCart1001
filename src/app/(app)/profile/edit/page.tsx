@@ -117,14 +117,17 @@ export default function EditProfilePage() {
   const isLoading = userLoading || profileLoading;
 
   useEffect(() => {
-    if (userProfile || authUser) {
+    // Check if form is dirty or there's a new upload to avoid resetting on other changes
+    if (!form.formState.isDirty && !newlyUploadedUrl) {
+      if (userProfile || authUser) {
         form.reset({
-            displayName: userProfile?.displayName || authUser?.displayName || '',
-            bio: userProfile?.bio || '',
-            profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || ''
+          displayName: userProfile?.displayName || authUser?.displayName || '',
+          bio: userProfile?.bio || '',
+          profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || '',
         });
+      }
     }
-  }, [userProfile, authUser, form.reset]);
+  }, [userProfile, authUser, form.reset, form.formState.isDirty, newlyUploadedUrl]);
 
 
   if (isLoading || !authUser) {
@@ -160,52 +163,53 @@ export default function EditProfilePage() {
       return;
     }
     
-    // Navigate immediately for optimistic UI
     router.push('/profile');
 
     const { displayName, bio } = values;
-    let profilePictureToSave = values.profilePictureUrl;
+    const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
 
     try {
-        // Optimistically update Auth profile with whatever URL we have (local or existing)
-        await updateProfile(auth.currentUser, { displayName, photoURL: profilePictureToSave });
+        // 1. Update Auth display name (non-sensitive, quick)
+        await updateProfile(auth.currentUser, { displayName });
 
-        // Optimistically update Firestore
+        // 2. Optimistically update Firestore with all text data and the local image URL if it exists
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        const updatedProfileData: Partial<UserProfile> = { displayName, bio, profilePictureUrl: profilePictureToSave };
-        setDocumentNonBlocking(userDocRef, updatedProfileData, { merge: true });
+        const optimisticProfileData: Partial<UserProfile> = { 
+            displayName, 
+            bio,
+            profilePictureUrl: values.profilePictureUrl,
+        };
+        setDocumentNonBlocking(userDocRef, optimisticProfileData, { merge: true });
 
+        // 3. If a new image was uploaded, handle the upload and final URL update in the background
+        if (isNewImageUpload) {
+            setIsUploading(true);
+            const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}`);
+            
+            uploadString(storageRef, newlyUploadedUrl, 'data_url')
+                .then(snapshot => getDownloadURL(snapshot.ref))
+                .then(downloadURL => {
+                    // 4. Once upload is complete, update both Auth and Firestore with the permanent URL
+                    if (auth.currentUser) {
+                        updateProfile(auth.currentUser, { photoURL: downloadURL });
+                        const finalUserDocRef = doc(firestore, 'users', auth.currentUser.uid);
+                        setDocumentNonBlocking(finalUserDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                    }
+                    setNewlyUploadedUrl(null);
+                })
+                .catch(error => {
+                    toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your text changes were saved, but the new image failed to upload.' });
+                })
+                .finally(() => {
+                    setIsUploading(false);
+                });
+        }
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Update Failed',
             description: error.message || 'An unexpected error occurred.',
         });
-        return; // Stop if the initial update fails
-    }
-    
-    // If a new image was uploaded (is a data URL), handle the upload in the background
-    if (newlyUploadedUrl && newlyUploadedUrl.startsWith('data:')) {
-        setIsUploading(true);
-        const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}`);
-        
-        uploadString(storageRef, newlyUploadedUrl, 'data_url')
-            .then(snapshot => getDownloadURL(snapshot.ref))
-            .then(downloadURL => {
-                // Once upload is complete, update Auth and Firestore with the permanent URL
-                if (auth.currentUser) {
-                    updateProfile(auth.currentUser, { photoURL: downloadURL });
-                    const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-                    setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
-                }
-                setNewlyUploadedUrl(null);
-            })
-            .catch(error => {
-                toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your text changes were saved, but the new image failed to upload.' });
-            })
-            .finally(() => {
-                setIsUploading(false);
-            });
     }
   }
 
@@ -459,3 +463,6 @@ export default function EditProfilePage() {
       </Dialog>
     </div>
   );
+}
+
+    

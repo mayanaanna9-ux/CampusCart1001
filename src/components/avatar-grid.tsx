@@ -62,47 +62,46 @@ export function AvatarGrid() {
     
     // Immediately navigate for a faster UX
     router.push('/home');
+    
+    const isNewImageUpload = selectedAvatarUrl.startsWith('data:');
 
-    // Use the local preview URL for immediate Auth profile update
-    try {
-        await updateProfile(auth.currentUser, {
-            photoURL: selectedAvatarUrl,
-        });
+    // 1. Optimistically update Firestore with local data URL
+    const userProfile = {
+        id: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        displayName: auth.currentUser.displayName || auth.currentUser.email,
+        profilePictureUrl: selectedAvatarUrl,
+    };
+    const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+    setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 
-        // Save local URL to Firestore initially
-        const userProfile = {
-            id: auth.currentUser.uid,
-            email: auth.currentUser.email,
-            displayName: auth.currentUser.displayName || auth.currentUser.email,
-            profilePictureUrl: selectedAvatarUrl,
-        };
-        const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
-
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Uh oh! Something went wrong.',
-            description: error.message || 'Could not update profile.',
-        });
-        // If initial save fails, don't proceed with upload
-        return;
+    // 2. If it's a static avatar, update Auth profile and we're done
+    if (!isNewImageUpload) {
+        try {
+            await updateProfile(auth.currentUser, { photoURL: selectedAvatarUrl });
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Uh oh! Something went wrong.',
+                description: error.message || 'Could not update profile picture.',
+            });
+        }
+        return; // Exit
     }
 
-    // If the selected URL is a data URL, it's a new upload.
-    if (selectedAvatarUrl.startsWith('data:')) {
+    // 3. If it is a new upload, handle it in the background
+    if (isNewImageUpload) {
         setIsUploading(true);
         const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}`);
         
-        // Perform the upload in the background
         uploadString(storageRef, selectedAvatarUrl, 'data_url')
           .then(uploadTask => getDownloadURL(uploadTask.ref))
           .then(downloadURL => {
-              // Once uploaded, update both Auth and Firestore with the permanent URL
+              // 4. Once uploaded, update both Auth and Firestore with the permanent URL
               if (auth.currentUser) {
                   updateProfile(auth.currentUser, { photoURL: downloadURL });
-                  const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-                  setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                  const finalUserDocRef = doc(firestore, 'users', auth.currentUser.uid);
+                  setDocumentNonBlocking(finalUserDocRef, { profilePictureUrl: downloadURL }, { merge: true });
               }
           })
           .catch(error => {
@@ -179,3 +178,5 @@ export function AvatarGrid() {
     </div>
   );
 }
+
+    
