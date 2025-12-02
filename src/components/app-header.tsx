@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, ShoppingCart, User, LogOut, UserPlus } from 'lucide-react';
+import { Bell, ShoppingCart, User, LogOut, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
@@ -57,6 +57,8 @@ export function AppHeader() {
   const displayName = isAnonymous ? 'Guest' : (userProfile?.displayName || user?.displayName || user?.email || 'User');
   const avatarUrl = userProfile?.profilePictureUrl || user?.photoURL || '';
 
+  const hasNotifications = true; // Mock data for notification dot
+
   return (
     <header className="sticky top-0 z-10 border-b bg-background/80 px-4 py-3 backdrop-blur-md md:px-6">
       <div className="flex items-center justify-between">
@@ -65,10 +67,13 @@ export function AppHeader() {
           <span className="font-headline text-xl font-bold">Campus Cart</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/search">
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
+          <Button asChild variant="ghost" size="icon" className="relative">
+            <Link href="/notifications">
+                {hasNotifications && (
+                    <span className="absolute bottom-2 left-2 block h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"></span>
+                )}
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
             </Link>
           </Button>
           {isLoading ? (
