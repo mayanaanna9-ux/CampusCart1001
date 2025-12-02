@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Bell, ShoppingCart, User, LogOut } from 'lucide-react';
+import { Bell, ShoppingCart, User, LogOut, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
@@ -55,7 +56,8 @@ export function AppHeader() {
   };
 
   const isLoading = userLoading || profileLoading;
-  const displayName = userProfile?.displayName || user?.displayName || user?.email || 'User';
+  const isAnonymous = user?.isAnonymous;
+  const displayName = isAnonymous ? 'Guest' : (userProfile?.displayName || user?.displayName || user?.email || 'User');
   const avatarUrl = userProfile?.profilePictureUrl || user?.photoURL || '';
 
   return (
@@ -95,7 +97,7 @@ export function AppHeader() {
                       {displayName}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
+                      {user.email || (isAnonymous && 'Guest Account')}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -106,6 +108,14 @@ export function AppHeader() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
+                {isAnonymous && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/signup">
+                      <UserPlus className="mr-2" />
+                      Create Account
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2" />
