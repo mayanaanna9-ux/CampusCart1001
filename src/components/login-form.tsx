@@ -19,7 +19,7 @@ import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -71,6 +71,30 @@ export function LoginForm() {
     }
   }
 
+  async function onGuestLogin() {
+    if (!auth) {
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh! Something went wrong.',
+          description: 'Firebase auth is not configured.',
+        });
+        return;
+      }
+      try {
+        await signInAnonymously(auth);
+        toast({
+          title: "Signed in as guest!",
+        });
+        router.push('/home');
+      } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: error.message || "Could not sign in as guest.",
+        });
+      }
+  }
+
   return (
     <Card className="w-full max-w-md">
        <CardHeader className="text-center">
@@ -120,8 +144,17 @@ export function LoginForm() {
             <Button type="submit" className="w-full font-bold" size="lg">Sign In</Button>
           </form>
         </Form>
+        <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or</span>
+            </div>
+        </div>
+        <Button variant="outline" className="w-full font-bold" size="lg" onClick={onGuestLogin}>Continue as Guest</Button>
       </CardContent>
-      <CardFooter className="flex flex-col items-center space-y-2">
+      <CardFooter className="flex flex-col items-center space-y-2 pt-6">
          <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link href="/signup" className="font-semibold text-primary hover:underline">
