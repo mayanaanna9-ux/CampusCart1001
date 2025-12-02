@@ -39,14 +39,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingDoc() {
-      return resource != null;
-    }
-
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-
     /**
      * @description Manages user profile documents, granting full access only to the owner.
      * @path /users/{userId}
@@ -58,8 +50,8 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if false; // Disallow listing all users for privacy
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
@@ -73,8 +65,8 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.sellerId) && request.resource.data.sellerId == resource.data.sellerId;
-      allow delete: if isExistingOwner(resource.data.sellerId);
+      allow update: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
     }
 
     /**
@@ -118,8 +110,8 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.senderId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.senderId == resource.data.senderId;
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.senderId == resource.data.senderId;
+      allow delete: if isOwner(userId);
     }
   }
 }
