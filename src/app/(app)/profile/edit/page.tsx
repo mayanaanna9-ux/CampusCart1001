@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -118,6 +119,7 @@ export default function EditProfilePage() {
         // Update Firestore profile
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
         const updatedProfileData = {
+            id: auth.currentUser.uid,
             displayName,
             bio,
             profilePictureUrl,
