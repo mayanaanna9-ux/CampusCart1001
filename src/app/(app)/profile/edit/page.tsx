@@ -250,7 +250,14 @@ export default function EditProfilePage() {
                <div className="space-y-4">
                 <Label>Profile Picture</Label>
                 <div className="flex items-center gap-6">
-                    <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                    <Label htmlFor="picture-upload" className="cursor-pointer group relative">
+                      <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload className="h-6 w-6 text-white" />
+                      </div>
+                    </Label>
+                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+
                     <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
                          {avatars.map((avatar) => (
                           <button
@@ -274,13 +281,6 @@ export default function EditProfilePage() {
                         ))}
                     </div>
                 </div>
-                
-                 <Label htmlFor="picture-upload" className="w-full">
-                    <Button variant="destructive" className="w-full bg-red-300 hover:bg-red-400 text-red-900" asChild>
-                        <span><Upload className="mr-2 h-4 w-4" /> {isUploading ? 'Uploading...' : 'Upload Image'}</span>
-                    </Button>
-                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
-                </Label> 
               </div>
 
               <FormField
