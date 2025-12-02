@@ -4,6 +4,15 @@ export type User = {
   avatarUrl: string;
 };
 
+export type UserProfile = {
+    id: string;
+    email: string | null;
+    displayName: string;
+    profilePictureUrl?: string;
+    avatarId?: string;
+    bio?: string;
+}
+
 export type Item = {
   id: string;
   name: string;

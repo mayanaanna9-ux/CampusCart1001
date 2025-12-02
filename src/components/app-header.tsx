@@ -12,16 +12,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { UserAvatar } from './user-avatar';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import type { UserProfile } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
 export function AppHeader() {
   const auth = useAuth();
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
 
   const handleSignOut = async () => {
     if (auth) {
@@ -41,6 +51,10 @@ export function AppHeader() {
     }
   };
 
+  const isLoading = userLoading || profileLoading;
+  const displayName = userProfile?.displayName || user?.displayName || user?.email || 'User';
+  const avatarUrl = userProfile?.profilePictureUrl || user?.photoURL || '';
+
   return (
     <header className="sticky top-0 z-10 border-b bg-background/80 px-4 py-3 backdrop-blur-md md:px-6">
       <div className="flex items-center justify-between">
@@ -53,15 +67,15 @@ export function AppHeader() {
             <Bell className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
           </Button>
-          {loading ? (
+          {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted" />
           ) : user && auth ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <UserAvatar
-                    name={user.displayName || user.email || 'User'}
-                    avatarUrl={user.photoURL || ''}
+                    name={displayName}
+                    avatarUrl={avatarUrl}
                     className="h-8 w-8"
                   />
                 </Button>
@@ -70,7 +84,7 @@ export function AppHeader() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {user.displayName || 'User'}
+                      {displayName}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
