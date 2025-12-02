@@ -157,12 +157,7 @@ export default function EditProfilePage() {
       return;
     }
     
-    toast({
-        title: 'Updating Profile...',
-        description: 'Your profile is being updated in the background.',
-    });
     router.push('/profile');
-
 
     try {
         let finalProfilePictureUrl = values.profilePictureUrl;
@@ -191,7 +186,6 @@ export default function EditProfilePage() {
         };
         setDocumentNonBlocking(userDocRef, updatedProfileData, { merge: true });
 
-        // Optimistically navigate away, but show success toast when done
         toast({
             title: 'Profile Updated',
             description: 'Your profile has been successfully updated.',
