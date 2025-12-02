@@ -9,14 +9,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { updateProfile } from 'firebase/auth';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { updateProfile, deleteUser } from 'firebase/auth';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -24,6 +24,17 @@ import { cn } from '@/lib/utils';
 import { Upload, ArrowLeft } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -152,6 +163,35 @@ export default function EditProfilePage() {
     }
   }
 
+  async function handleDeleteAccount() {
+    if (!auth || !auth.currentUser || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
+      return;
+    }
+
+    try {
+        const user = auth.currentUser;
+        // First, delete the user's document from Firestore.
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await deleteDoc(userDocRef);
+        
+        // Then, delete the user from Firebase Authentication.
+        await deleteUser(user);
+
+        toast({
+            title: 'Account Deleted',
+            description: 'Your account has been permanently deleted.',
+        });
+        router.push('/');
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: error.message || 'An unexpected error occurred while deleting your account.',
+        });
+    }
+  }
+
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
       <Button variant="ghost" onClick={() => router.back()} className="mb-6">
@@ -233,7 +273,35 @@ export default function EditProfilePage() {
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="flex-col items-start gap-4 border-t px-6 py-4">
+             <div className="space-y-2">
+                 <h3 className="font-headline font-semibold">Danger Zone</h3>
+                 <p className="text-sm text-muted-foreground">
+                    Deleting your account is permanent and cannot be undone.
+                 </p>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">Delete Account</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your
+                            account and remove your data from our servers.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAccount}>Yes, delete my account</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+             </div>
+        </CardFooter>
       </Card>
     </div>
   );
 }
+
+    
