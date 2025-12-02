@@ -3,8 +3,8 @@
     {
       "id": "avatar1",
       "description": "A cheerful cartoon sun avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1622397987974-9351581a6e9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon sun"
+      "imageUrl": "https://images.unsplash.com/photo-1635805737704-58f7c9343717?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon character"
     },
     {
       "id": "avatar2",
@@ -15,8 +15,8 @@
     {
       "id": "avatar3",
       "description": "A happy cartoon cloud avatar.",
-      "imageUrl": "https://images.unsplash.com/photo-1622992855145-35de08139e70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzUwODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cartoon cloud"
+      "imageUrl": "https://images.unsplash.com/photo-1634335541179-43c345b5e7d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjdXRlJTIwY2FydG9vbiUyMGF2YXRhcnxlbnwwfHx8fDE3MjE4MzU2ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cartoon monster"
     },
     {
       "id": "avatar4",
@@ -63,7 +63,7 @@
     {
       "id": "gadget3",
       "description": "A tablet device",
-      "imageUrl": "https://images.unsplash.com/photo-1702479743967-3dcccd4a671d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx0YWJsZXQlMjBkZXZpY2V8ZW58MHx8fHwxNzY0NDg3OTEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1702479743967-3dcccd4a671d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx0YWJsZXQlMjBkZXZpY2V8ZW58MHx8fHwxNzY0NDg3OTEwfDA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "tablet device"
     },
     {
@@ -87,7 +87,7 @@
     {
       "id": "other1",
       "description": "A bicycle",
-      "imageUrl": "https://images.unsplash.com/photo-1763257359223-c871897d094c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxiaWN5Y2xlJTIwdHJhbnNwb3J0fGVufDB8fHx8MTc2NDU5MzM4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1763257359223-c871897d094c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxiaWN5Y2xlJTIwdHJhbnNwb3J0fGVufDB8fHx8MTc2NDU5MzM4M3ww&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "bicycle transport"
     },
     {
@@ -99,7 +99,7 @@
     {
       "id": "item1_1",
       "description": "Laptop on a wooden table",
-      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1520556749640-c7301b39cf68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bGFwdG9wJTIwdGVjaG5vbG9neXxlbnwwfHx8fDE3NjQ1MDcxODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "laptop technology"
     },
     {
