@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { updateProfile, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, getCredentialFromError } from 'firebase/auth';
+import { updateProfile, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } from 'firebase/auth';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
@@ -210,24 +210,17 @@ export default function EditProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
       return;
     }
-    try {
-      const user = auth.currentUser;
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await deleteDoc(userDocRef);
-      await deleteUser(user);
-      toast({
-        title: 'Account Deleted',
-        description: 'Your Campus Cart account has been permanently deleted.',
-      });
-      router.push('/');
-    } catch (error: any) {
-      console.error("Deletion final step failed:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: 'Could not delete account. Please try again.',
-      });
-    }
+    const user = auth.currentUser;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    // Delete firestore doc first
+    await deleteDoc(userDocRef);
+    // Then delete the auth user
+    await deleteUser(user);
+    toast({
+      title: 'Account Deleted',
+      description: 'Your Campus Cart account has been permanently deleted.',
+    });
+    router.push('/');
   }
 
   async function handleDeleteAccount() {
@@ -237,7 +230,6 @@ export default function EditProfilePage() {
     }
 
     try {
-      // First attempt to delete the user
       await performDeletion();
     } catch (error: any) {
       if (error.code === 'auth/requires-recent-login') {
@@ -248,6 +240,7 @@ export default function EditProfilePage() {
         });
         setShowReauthDialog(true);
       } else {
+        console.error("Deletion failed:", error);
         toast({
           variant: 'destructive',
           title: 'Deletion Failed',
@@ -349,7 +342,7 @@ export default function EditProfilePage() {
                         <div className="flex justify-center">
                             <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
                                 <Button asChild variant="destructive" className="w-full" disabled={isUploading}>
-                                    <div className='w-full'>
+                                    <div className='w-full text-center'>
                                         {isUploading ? 'Uploading...' : 'Upload Image'}
                                         <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
                                     </div>
@@ -464,5 +457,7 @@ export default function EditProfilePage() {
       </Dialog>
     </div>
   );
+
+    
 
     
