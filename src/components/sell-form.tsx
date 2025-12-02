@@ -19,52 +19,55 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Upload, X } from 'lucide-react';
+import { ImagePlus, Upload, X, Loader2 } from 'lucide-react';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 const formSchema = z.object({
-  itemName: z.string().min(3, 'Item name must be at least 3 characters long.'),
+  name: z.string().min(3, 'Item name must be at least 3 characters long.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   category: z.enum(['gadgets', 'books', 'clothes', 'food', 'other']),
   price: z.coerce.number().positive('Price must be a positive number.'),
   condition: z.enum(['new', 'used-like-new', 'used-good', 'used-fair']),
-  images: z.array(z.string()).optional(),
+  imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
 });
 
 export function SellForm() {
   const { toast } = useToast();
+  const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const storage = useStorage();
+  const { user } = useUser();
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      itemName: '',
+      name: '',
       description: '',
       price: 0,
-      images: [],
+      imageUrls: [],
     },
+    mode: 'onChange',
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviews: string[] = [];
-      const currentPreviews = form.getValues('images') || [];
+      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+      const allPreviews = [...imagePreviews, ...newPreviews];
+      setImagePreviews(allPreviews);
       
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          if (newPreviews.length === files.length) {
-            const allPreviews = [...currentPreviews, ...newPreviews];
-            form.setValue('images', allPreviews);
-            setImagePreviews(allPreviews);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      const currentImages = form.getValues('imageUrls') || [];
+      const allImages = [...currentImages, ...newPreviews];
+      form.setValue('imageUrls', allImages, { shouldValidate: true });
     }
   };
 
@@ -72,17 +75,68 @@ export function SellForm() {
     const currentPreviews = [...imagePreviews];
     currentPreviews.splice(index, 1);
     setImagePreviews(currentPreviews);
-    form.setValue('images', currentPreviews);
+    form.setValue('imageUrls', currentPreviews, { shouldValidate: true });
   }
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Item Posted!",
-      description: `${values.itemName} is now available for sale.`,
-    });
-    form.reset();
-    setImagePreviews([]);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !firestore || !storage) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
+        return;
+    }
+    setIsSubmitting(true);
+    
+    try {
+        const uploadedImageUrls: string[] = [];
+
+        // Upload images to Firebase Storage
+        for (const image of values.imageUrls) {
+            // image is a local blob URL, fetch it to get the data
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+
+            const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
+            const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+            const downloadUrl = await getDownloadURL(uploadResult.ref);
+            uploadedImageUrls.push(downloadUrl);
+        }
+        
+        // Add item to Firestore
+        const itemsCollection = collection(firestore, 'items');
+        await addDoc(itemsCollection, {
+            name: values.name,
+            description: values.description,
+            category: values.category,
+            price: values.price,
+            condition: values.condition,
+            sellerId: user.uid,
+            imageUrls: uploadedImageUrls,
+            postedAt: serverTimestamp(), // Use server timestamp
+        });
+
+        toast({
+            title: "Item Posted!",
+            description: `${values.name} is now available for sale.`,
+        });
+
+        form.reset();
+        setImagePreviews([]);
+        router.push('/home'); // Redirect to home to see the new item
+
+    } catch(error: any) {
+        console.error("Error posting item:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: error.message || 'There was an error posting your item.',
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -94,42 +148,52 @@ export function SellForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
              <div>
-                <Label>Item Images</Label>
-                <div className="mt-2 grid grid-cols-3 gap-4">
-                  {imagePreviews.map((src, index) => (
-                    <div key={index} className="relative aspect-square">
-                      <Image src={src} alt={`Preview ${index}`} fill className="rounded-lg object-cover" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Label htmlFor="file-upload" className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-card hover:bg-muted/50">
-                    <div className="text-center">
-                        <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground" />
-                        <span className="mt-2 block text-sm font-medium text-muted-foreground">
-                            Upload
-                        </span>
-                    </div>
-                     <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} accept="image/png, image/jpeg, image/gif"/>
-                  </Label>
-                </div>
+                <FormField
+                  control={form.control}
+                  name="imageUrls"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Images (at least 1 required)</FormLabel>
+                        <div className="mt-2 grid grid-cols-3 gap-4">
+                          {imagePreviews.map((src, index) => (
+                            <div key={index} className="relative aspect-square">
+                              <Image src={src} alt={`Preview ${index}`} fill className="rounded-lg object-cover" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                onClick={() => removeImage(index)}
+                                disabled={isSubmitting}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Label htmlFor="file-upload" className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-card hover:bg-muted/50">
+                            <div className="text-center">
+                                <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground" />
+                                <span className="mt-2 block text-sm font-medium text-muted-foreground">
+                                    Upload
+                                </span>
+                            </div>
+                             <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} accept="image/png, image/jpeg, image/gif" disabled={isSubmitting}/>
+                          </Label>
+                        </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </div>
             
             <FormField
               control={form.control}
-              name="itemName"
+              name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Item Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., MacBook Air" {...field} />
+                    <Input placeholder="e.g., MacBook Air" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,7 +207,7 @@ export function SellForm() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe your item in detail..." className="min-h-[120px]" {...field} />
+                    <Textarea placeholder="Describe your item in detail..." className="min-h-[120px]" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,7 +221,7 @@ export function SellForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -183,7 +247,7 @@ export function SellForm() {
                   <FormItem>
                     <FormLabel>Price ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 50.00" {...field} />
+                      <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -197,7 +261,7 @@ export function SellForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Condition</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select the item's condition" />
@@ -215,10 +279,15 @@ export function SellForm() {
               )}
             />
 
-            <Button type="submit" size="lg" className="w-full font-bold">Sell</Button>
+            <Button type="submit" size="lg" className="w-full font-bold" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Posting...' : 'Sell'}
+            </Button>
           </form>
         </Form>
       </CardContent>
     </Card>
   );
 }
+
+    

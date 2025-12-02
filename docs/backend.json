@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -77,7 +78,8 @@
           "type": "array",
           "description": "URLs of the item's images.",
           "items": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           }
         },
         "postedDate": {
@@ -289,3 +291,5 @@
     "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Messages are in a subcollection `/users/{userId}/chats/{chatId}/messages/{messageId}` using path-based ownership. Avatars are stored under `/avatars/{avatarId}`.\n\n**Authorization Independence**: The `Item` document denormalizes the `sellerId`, which allows rules to determine ownership of an item directly from the item document without needing to read the user's profile. The message structure uses a hierarchical path. Denormalizing user information into messages (if needed in the future) would further enhance independence, but the current structure uses path-based ownership which is ideal.\n\n**QAPs (Rules are not Filters)**: Items are stored in a top-level `/items` collection. Queries can efficiently filter and list items without requiring complex security rules. Profile data is kept private under each user's document. Messages are similarly secured with path-based access.  The separation of concerns ensures that listing and filtering operations are secure and efficient."
   }
 }
+
+    
