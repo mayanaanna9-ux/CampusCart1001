@@ -108,11 +108,15 @@ export function LoginForm() {
     }
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
         toast({
             title: "Signed in with Google!",
         });
-        router.push('/home');
+        if (!result.user.photoURL) {
+            router.push('/setup-profile');
+        } else {
+            router.push('/home');
+        }
     } catch (error: any) {
         toast({
             variant: "destructive",

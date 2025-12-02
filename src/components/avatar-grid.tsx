@@ -10,15 +10,59 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { updateProfile } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 export function AvatarGrid() {
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
 
-  const handleContinue = () => {
-    // In a real app, you would save the user's choice here.
-    router.push('/home');
+  const handleContinue = async () => {
+    if (!auth || !auth.currentUser || !selectedAvatarUrl || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be signed in and select an avatar.',
+      });
+      return;
+    }
+
+    try {
+      await updateProfile(auth.currentUser, {
+        photoURL: selectedAvatarUrl,
+      });
+
+      const userProfile = {
+        id: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        displayName: auth.currentUser.displayName || auth.currentUser.email,
+        profilePictureUrl: selectedAvatarUrl,
+      };
+
+      const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
+      toast({
+        title: 'Profile updated!',
+        description: 'Your avatar has been set.',
+      });
+
+      router.push('/home');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: error.message || 'Could not update profile.',
+      });
+    }
   };
 
   return (
@@ -32,10 +76,10 @@ export function AvatarGrid() {
                 {avatars.map((avatar) => (
                   <button
                     key={avatar.id}
-                    onClick={() => setSelectedAvatar(avatar.imageUrl)}
+                    onClick={() => setSelectedAvatarUrl(avatar.imageUrl)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
-                      selectedAvatar === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
+                      selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
                     )}
                   >
                     <Image
@@ -74,7 +118,7 @@ export function AvatarGrid() {
                 </div> 
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatar}>
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl}>
               Continue
             </Button>
           </div>
