@@ -82,6 +82,8 @@ export default function EditProfilePage() {
   const storage = useStorage();
   const { user: authUser, loading: userLoading } = useUser();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPromise, setUploadPromise] = useState<Promise<string> | null>(null);
+
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !authUser) return null;
@@ -112,33 +114,38 @@ export default function EditProfilePage() {
 
   const handleAvatarSelect = (url: string) => {
     form.setValue('profilePictureUrl', url, { shouldValidate: true, shouldDirty: true });
+    setUploadPromise(null);
   }
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!authUser || !storage) return;
 
     const file = event.target.files?.[0];
     if (file) {
-      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = async () => {
+      reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        
-        // Show preview immediately
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
-
+        
+        setIsUploading(true);
         const storageRef = ref(storage, `profile-pictures/${authUser.uid}/${Date.now()}`);
-        try {
-            const uploadTask = await uploadString(storageRef, dataUrl, 'data_url');
-            const downloadURL = await getDownloadURL(uploadTask.ref);
-            
-            // Set final URL from storage
-            form.setValue('profilePictureUrl', downloadURL, { shouldValidate: true, shouldDirty: true });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
-        } finally {
-            setIsUploading(false);
-        }
+        
+        const promise = uploadString(storageRef, dataUrl, 'data_url')
+          .then(uploadTask => getDownloadURL(uploadTask.ref))
+          .then(downloadURL => {
+              // This promise resolves with the final URL
+              return downloadURL;
+          })
+          .catch(error => {
+              toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
+              // Revert preview if needed, or just notify
+              return Promise.reject(error);
+          })
+          .finally(() => {
+              setIsUploading(false);
+          });
+        
+        setUploadPromise(promise);
       };
       reader.readAsDataURL(file);
     }
@@ -149,14 +156,26 @@ export default function EditProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
       return;
     }
+    
+    toast({
+        title: 'Updating Profile...',
+        description: 'Your profile is being updated in the background.',
+    });
 
     try {
-        const { displayName, bio, profilePictureUrl } = values;
+        let finalProfilePictureUrl = values.profilePictureUrl;
+
+        // If an upload is in progress or has finished, wait for its URL
+        if (uploadPromise) {
+            finalProfilePictureUrl = await uploadPromise;
+        }
+
+        const { displayName, bio } = values;
 
         // Update Firebase Auth profile
         await updateProfile(auth.currentUser, {
             displayName,
-            photoURL: profilePictureUrl,
+            photoURL: finalProfilePictureUrl,
         });
 
         // Update Firestore profile
@@ -166,7 +185,7 @@ export default function EditProfilePage() {
             email: auth.currentUser.email,
             displayName,
             bio,
-            profilePictureUrl,
+            profilePictureUrl: finalProfilePictureUrl,
         };
         setDocumentNonBlocking(userDocRef, updatedProfileData, { merge: true });
 
@@ -213,7 +232,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const isSaveDisabled = !form.formState.isDirty || isUploading;
+  const isSaveDisabled = !form.formState.isDirty;
 
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
@@ -293,7 +312,7 @@ export default function EditProfilePage() {
               />
 
               <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled}>
-                {isUploading ? 'Waiting for upload...' : 'Save Changes'}
+                {isUploading ? 'Updating...' : 'Save Changes'}
               </Button>
             </form>
           </Form>
@@ -328,5 +347,3 @@ export default function EditProfilePage() {
     </div>
   );
 }
-
-    

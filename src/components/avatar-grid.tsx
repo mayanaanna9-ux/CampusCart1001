@@ -27,28 +27,36 @@ export function AvatarGrid() {
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPromise, setUploadPromise] = useState<Promise<string> | null>(null);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (url: string) => {
+    setSelectedAvatarUrl(url);
+    setUploadPromise(null); // Clear any pending upload if an avatar is selected
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
      if (!auth?.currentUser || !storage) return;
     const file = event.target.files?.[0];
     if (file) {
-      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = async () => {
+      reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setSelectedAvatarUrl(dataUrl); // Show preview
         
+        setIsUploading(true);
         const storageRef = ref(storage, `profile-pictures/${auth.currentUser!.uid}/${Date.now()}`);
-        try {
-          const uploadTask = await uploadString(storageRef, dataUrl, 'data_url');
-          const downloadURL = await getDownloadURL(uploadTask.ref);
-          setSelectedAvatarUrl(downloadURL); // Set final URL from storage
-        } catch (error) {
-          toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
-          setSelectedAvatarUrl(null); // Clear preview on error
-        } finally {
+        
+        const promise = uploadString(storageRef, dataUrl, 'data_url')
+          .then(uploadTask => getDownloadURL(uploadTask.ref))
+          .catch(error => {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
+            return Promise.reject(error);
+          })
+          .finally(() => {
             setIsUploading(false);
-        }
+          });
+
+        setUploadPromise(promise);
       };
       reader.readAsDataURL(file);
     }
@@ -63,17 +71,29 @@ export function AvatarGrid() {
       });
       return;
     }
+    
+    toast({
+      title: 'Setting up your profile...',
+      description: 'Please wait a moment.',
+    });
 
     try {
+      let finalAvatarUrl = selectedAvatarUrl;
+
+      // If an upload was initiated, wait for it to complete to get the final URL
+      if (uploadPromise) {
+        finalAvatarUrl = await uploadPromise;
+      }
+
       await updateProfile(auth.currentUser, {
-        photoURL: selectedAvatarUrl,
+        photoURL: finalAvatarUrl,
       });
 
       const userProfile = {
         id: auth.currentUser.uid,
         email: auth.currentUser.email,
         displayName: auth.currentUser.displayName || auth.currentUser.email,
-        profilePictureUrl: selectedAvatarUrl,
+        profilePictureUrl: finalAvatarUrl,
       };
 
       const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
@@ -105,7 +125,7 @@ export function AvatarGrid() {
                 {avatars.map((avatar) => (
                   <button
                     key={avatar.id}
-                    onClick={() => setSelectedAvatarUrl(avatar.imageUrl)}
+                    onClick={() => handleAvatarSelect(avatar.imageUrl)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
                       selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
@@ -153,7 +173,7 @@ export function AvatarGrid() {
                 </div> 
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl}>
               {isUploading ? 'Uploading...' : 'Continue'}
             </Button>
           </div>
