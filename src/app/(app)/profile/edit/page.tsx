@@ -41,7 +41,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
   bio: z.string().max(160, 'Bio cannot exceed 160 characters.').optional(),
-  profilePictureUrl: z.string().url('Invalid URL').optional(),
+  profilePictureUrl: z.string().url('Invalid URL').or(z.literal('')).optional(),
 });
 
 const reauthSchema = z.object({
@@ -119,11 +119,17 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (userProfile || authUser) {
+      const initialPhotoUrl = userProfile?.profilePictureUrl || authUser?.photoURL || '';
       form.reset({
         displayName: userProfile?.displayName || authUser?.displayName || '',
         bio: userProfile?.bio || '',
-        profilePictureUrl: newlyUploadedUrl || userProfile?.profilePictureUrl || authUser?.photoURL || '',
+        profilePictureUrl: initialPhotoUrl,
       });
+       if(newlyUploadedUrl) {
+         form.setValue('profilePictureUrl', newlyUploadedUrl, { shouldDirty: true });
+       } else {
+         form.setValue('profilePictureUrl', initialPhotoUrl);
+       }
     }
   }, [userProfile, authUser, form, newlyUploadedUrl]);
 
@@ -148,7 +154,7 @@ export default function EditProfilePage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
-        setNewlyUploadedUrl(dataUrl);
+        setNewlyUploadedUrl(dataUrl); // This will trigger the useEffect to reset, but we re-apply it.
       };
       reader.readAsDataURL(file);
     }
@@ -164,11 +170,11 @@ export default function EditProfilePage() {
 
     const user = auth.currentUser;
     const { displayName, bio } = values;
-    const profilePictureUrl = values.profilePictureUrl || ''; // Ensure it's not undefined
+    let profilePictureUrl = values.profilePictureUrl || ''; // Ensure it's not undefined
 
     const userDocRef = doc(firestore, 'users', user.uid);
-
-    // Prepare profile data, always including the user ID
+    
+    // Prepare profile data, always including the user ID and email for creation rules.
     const profileData: Partial<UserProfile> = {
         id: user.uid,
         email: user.email,
@@ -176,25 +182,24 @@ export default function EditProfilePage() {
         bio,
     };
     
-    // Determine if a new image was uploaded vs. a static avatar selected
-    const isNewImageUpload = profilePictureUrl.startsWith('data:');
+    const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
 
     try {
         if (isNewImageUpload) {
-            // It's a new local upload. Update text data first, but don't set the image URL yet.
+            // It's a new local upload. Update text data and local state first.
+            profileData.profilePictureUrl = newlyUploadedUrl; // Optimistically use the local URL
             setDocumentNonBlocking(userDocRef, profileData, { merge: true });
             if (displayName !== user.displayName) {
                 updateProfile(user, { displayName });
             }
 
             // Start upload in background. On completion, update both auth and firestore URLs.
-            setIsUploading(true);
             const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-            uploadString(storageRef, profilePictureUrl, 'data_url')
+            uploadString(storageRef, newlyUploadedUrl, 'data_url')
                 .then(snapshot => getDownloadURL(snapshot.ref))
                 .then(downloadURL => {
                     // Update both Auth and Firestore with the permanent URL
-                    if (auth.currentUser) { // Re-check current user
+                    if (auth.currentUser) {
                          updateProfile(auth.currentUser, { photoURL: downloadURL });
                          setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
                     }
@@ -202,18 +207,16 @@ export default function EditProfilePage() {
                 .catch(error => {
                     console.error("Image upload failed:", error);
                     toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Your profile was saved, but the new image failed to upload.' });
-                })
-                .finally(() => {
-                    setIsUploading(false);
                 });
 
         } else {
             // It's a static avatar URL or no change. Update everything.
+            // If newlyUploadedUrl is null, it means we selected an avatar or did not change the image
+            profilePictureUrl = form.getValues('profilePictureUrl') || '';
             profileData.profilePictureUrl = profilePictureUrl;
             
             setDocumentNonBlocking(userDocRef, profileData, { merge: true });
             
-            // Update auth profile if display name or photo URL has changed
             if (displayName !== user.displayName || profilePictureUrl !== user.photoURL) {
                 updateProfile(user, { displayName, photoURL: profilePictureUrl });
             }
@@ -236,12 +239,15 @@ export default function EditProfilePage() {
     const user = auth.currentUser;
     
     try {
+        // Must delete the user first. Security rules prevent doc deletion after auth is gone.
         await deleteUser(user);
         toast({
           title: 'Account Deletion Initiated',
           description: 'Your account is being deleted. This may take a moment.',
         });
-        // Non-blocking delete for Firestore doc
+        // Now that user is deleted, their own doc can be deleted if rules allow.
+        // Or if rules dont allow it, it will be orphaned but user can't log in.
+        // We will now attempt to delete the user's document.
         const userDocRef = doc(firestore, 'users', user.uid);
         deleteDoc(userDocRef).then(() => {
              toast({
@@ -250,10 +256,15 @@ export default function EditProfilePage() {
             });
             router.push('/');
         }).catch(error => {
-            // This might happen if the rules don't allow deletion after auth user is gone
-            // Or if there are other issues. It's less critical as the user account is gone.
-            console.error("Firestore document deletion failed:", error);
+             // This might happen if the rules don't allow deletion after auth user is gone
+             console.error("Firestore document deletion failed, it may be orphaned:", error);
+             toast({
+                title: 'Account Data Cleanup Failed',
+                description: 'Your account has been deleted, but some data may remain.',
+            });
+             router.push('/');
         });
+
     } catch (error: any) {
        if (error.code === 'auth/requires-recent-login') {
         toast({
@@ -332,7 +343,7 @@ export default function EditProfilePage() {
                                 <Upload className="h-6 w-6 text-white" />
                             </div>
                         </Label>
-                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
                     </div>
                     
                     <div className="flex-1 space-y-4">
@@ -370,10 +381,10 @@ export default function EditProfilePage() {
 
                         <div className="flex justify-center">
                             <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
-                                <Button asChild variant="destructive" className="w-full" disabled={isUploading}>
+                                <Button asChild variant="destructive" className="w-full">
                                     <div className='w-full text-center'>
-                                        {isUploading ? 'Uploading...' : 'Upload Image'}
-                                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                                        {'Upload Image'}
+                                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
                                     </div>
                                 </Button>
                             </Label>
@@ -487,5 +498,3 @@ export default function EditProfilePage() {
     </div>
   );
 }
-
-    
