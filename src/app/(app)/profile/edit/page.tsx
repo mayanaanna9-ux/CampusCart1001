@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
@@ -14,9 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { updateProfile, deleteUser } from 'firebase/auth';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -78,7 +79,9 @@ export default function EditProfilePage() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { user: authUser, loading: userLoading } = useUser();
+  const [isUploading, setIsUploading] = useState(false);
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !authUser) return null;
@@ -111,13 +114,31 @@ export default function EditProfilePage() {
     form.setValue('profilePictureUrl', url, { shouldValidate: true, shouldDirty: true });
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!authUser || !storage) return;
+
     const file = event.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result as string;
+        
+        // Show preview immediately
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
+
+        const storageRef = ref(storage, `profile-pictures/${authUser.uid}/${Date.now()}`);
+        try {
+            const uploadTask = await uploadString(storageRef, dataUrl, 'data_url');
+            const downloadURL = await getDownloadURL(uploadTask.ref);
+            
+            // Set final URL from storage
+            form.setValue('profilePictureUrl', downloadURL, { shouldValidate: true, shouldDirty: true });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
+        } finally {
+            setIsUploading(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -140,7 +161,7 @@ export default function EditProfilePage() {
 
         // Update Firestore profile
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        const updatedProfileData = {
+        const updatedProfileData: Partial<UserProfile> = {
             id: auth.currentUser.uid,
             email: auth.currentUser.email,
             displayName,
@@ -192,6 +213,8 @@ export default function EditProfilePage() {
     }
   }
 
+  const isSaveDisabled = !form.formState.isDirty || isUploading;
+
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
       <Button variant="ghost" onClick={() => router.back()} className="mb-6">
@@ -235,9 +258,9 @@ export default function EditProfilePage() {
                 
                  <Label htmlFor="picture-upload" className="w-full">
                     <Button variant="destructive" className="w-full bg-red-300 hover:bg-red-400 text-red-900" asChild>
-                        <span><Upload className="mr-2 h-4 w-4" /> Upload Image</span>
+                        <span><Upload className="mr-2 h-4 w-4" /> {isUploading ? 'Uploading...' : 'Upload Image'}</span>
                     </Button>
-                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
+                    <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
                 </Label> 
               </div>
 
@@ -269,7 +292,9 @@ export default function EditProfilePage() {
                 )}
               />
 
-              <Button type="submit" size="lg" className="w-full font-bold" disabled={!form.formState.isDirty}>Save Changes</Button>
+              <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled}>
+                {isUploading ? 'Waiting for upload...' : 'Save Changes'}
+              </Button>
             </form>
           </Form>
         </CardContent>

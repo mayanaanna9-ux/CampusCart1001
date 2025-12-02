@@ -10,28 +10,45 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useStorage } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 export function AvatarGrid() {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+     if (!auth?.currentUser || !storage) return;
     const file = event.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        setSelectedAvatarUrl(dataUrl);
+        setSelectedAvatarUrl(dataUrl); // Show preview
+        
+        const storageRef = ref(storage, `profile-pictures/${auth.currentUser!.uid}/${Date.now()}`);
+        try {
+          const uploadTask = await uploadString(storageRef, dataUrl, 'data_url');
+          const downloadURL = await getDownloadURL(uploadTask.ref);
+          setSelectedAvatarUrl(downloadURL); // Set final URL from storage
+        } catch (error) {
+          toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
+          setSelectedAvatarUrl(null); // Clear preview on error
+        } finally {
+            setIsUploading(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -127,17 +144,17 @@ export function AvatarGrid() {
                                 <>
                                     <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
                                     <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                    <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 800x400px)</p>
+                                    <p className="text-xs text-muted-foreground">PNG, JPG</p>
                                 </>
                             )}
                         </div>
-                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
+                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
                     </Label>
                 </div> 
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl}>
-              Continue
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
+              {isUploading ? 'Uploading...' : 'Continue'}
             </Button>
           </div>
         </CardContent>
