@@ -207,12 +207,13 @@ export default function EditProfilePage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         await deleteDoc(userDocRef);
         
-        // Then, delete the user from Firebase Authentication.
+        // Then, delete the user from Firebase Authentication. This only deletes the user
+        // from this app's authentication system, not from their Google account or other providers.
         await deleteUser(user);
 
         toast({
             title: 'Account Deleted',
-            description: 'Your account has been permanently deleted.',
+            description: 'Your Campus Cart account has been permanently deleted.',
         });
         router.push('/');
     } catch (error: any) {
@@ -335,7 +336,7 @@ export default function EditProfilePage() {
              <div className="space-y-2">
                  <h3 className="font-headline font-semibold">Danger Zone</h3>
                  <p className="text-sm text-muted-foreground">
-                    Deleting your account is permanent and cannot be undone.
+                    Deleting your account is permanent and cannot be undone. This will only delete your Campus Cart data.
                  </p>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -346,7 +347,7 @@ export default function EditProfilePage() {
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete your
-                            account and remove your data from our servers.
+                            Campus Cart account and remove your data from our servers.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
