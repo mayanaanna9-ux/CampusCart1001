@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -86,7 +86,7 @@ export default function EditProfilePage() {
   const storage = useStorage();
   const { user: authUser, loading: userLoading } = useUser();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadPromise, setUploadPromise] = useState<Promise<string> | null>(null);
+  const [newlyUploadedUrl, setNewlyUploadedUrl] = useState<string | null>(null);
   const [showReauthDialog, setShowReauthDialog] = useState(false);
 
 
@@ -116,6 +116,17 @@ export default function EditProfilePage() {
   
   const isLoading = userLoading || profileLoading;
 
+  useEffect(() => {
+    if (userProfile || authUser) {
+        form.reset({
+            displayName: userProfile?.displayName || authUser?.displayName || '',
+            bio: userProfile?.bio || '',
+            profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || ''
+        });
+    }
+  }, [userProfile, authUser, form.reset]);
+
+
   if (isLoading || !authUser) {
     return <EditProfileSkeleton />;
   }
@@ -124,7 +135,7 @@ export default function EditProfilePage() {
 
   const handleAvatarSelect = (url: string) => {
     form.setValue('profilePictureUrl', url, { shouldValidate: true, shouldDirty: true });
-    setUploadPromise(null);
+    setNewlyUploadedUrl(null);
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,27 +146,9 @@ export default function EditProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
+        // Set preview immediately
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
-        
-        setIsUploading(true);
-        const storageRef = ref(storage, `profile-pictures/${authUser.uid}/${Date.now()}`);
-        
-        const promise = uploadString(storageRef, dataUrl, 'data_url')
-          .then(uploadTask => getDownloadURL(uploadTask.ref))
-          .then(downloadURL => {
-              // This promise resolves with the final URL
-              return downloadURL;
-          })
-          .catch(error => {
-              toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
-              // Revert preview if needed, or just notify
-              return Promise.reject(error);
-          })
-          .finally(() => {
-              setIsUploading(false);
-          });
-        
-        setUploadPromise(promise);
+        setNewlyUploadedUrl(dataUrl);
       };
       reader.readAsDataURL(file);
     }
@@ -167,33 +160,19 @@ export default function EditProfilePage() {
       return;
     }
     
+    // Navigate immediately for optimistic UI
     router.push('/profile');
 
+    const { displayName, bio } = values;
+    let profilePictureToSave = values.profilePictureUrl;
+
     try {
-        let finalProfilePictureUrl = values.profilePictureUrl;
+        // Optimistically update Auth profile with whatever URL we have (local or existing)
+        await updateProfile(auth.currentUser, { displayName, photoURL: profilePictureToSave });
 
-        // If an upload is in progress or has finished, wait for its URL
-        if (uploadPromise) {
-            finalProfilePictureUrl = await uploadPromise;
-        }
-
-        const { displayName, bio } = values;
-
-        // Update Firebase Auth profile
-        await updateProfile(auth.currentUser, {
-            displayName,
-            photoURL: finalProfilePictureUrl,
-        });
-
-        // Update Firestore profile
+        // Optimistically update Firestore
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        const updatedProfileData: Partial<UserProfile> = {
-            id: auth.currentUser.uid,
-            email: auth.currentUser.email,
-            displayName,
-            bio,
-            profilePictureUrl: finalProfilePictureUrl,
-        };
+        const updatedProfileData: Partial<UserProfile> = { displayName, bio, profilePictureUrl: profilePictureToSave };
         setDocumentNonBlocking(userDocRef, updatedProfileData, { merge: true });
 
     } catch (error: any) {
@@ -202,6 +181,31 @@ export default function EditProfilePage() {
             title: 'Update Failed',
             description: error.message || 'An unexpected error occurred.',
         });
+        return; // Stop if the initial update fails
+    }
+    
+    // If a new image was uploaded (is a data URL), handle the upload in the background
+    if (newlyUploadedUrl && newlyUploadedUrl.startsWith('data:')) {
+        setIsUploading(true);
+        const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}`);
+        
+        uploadString(storageRef, newlyUploadedUrl, 'data_url')
+            .then(snapshot => getDownloadURL(snapshot.ref))
+            .then(downloadURL => {
+                // Once upload is complete, update Auth and Firestore with the permanent URL
+                if (auth.currentUser) {
+                    updateProfile(auth.currentUser, { photoURL: downloadURL });
+                    const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+                    setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                }
+                setNewlyUploadedUrl(null);
+            })
+            .catch(error => {
+                toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your text changes were saved, but the new image failed to upload.' });
+            })
+            .finally(() => {
+                setIsUploading(false);
+            });
     }
   }
 
@@ -212,27 +216,19 @@ export default function EditProfilePage() {
     }
     const user = auth.currentUser;
     const userDocRef = doc(firestore, 'users', user.uid);
-    // Delete firestore doc first
-    await deleteDoc(userDocRef);
-    // Then delete the auth user
-    await deleteUser(user);
-    toast({
-      title: 'Account Deleted',
-      description: 'Your Campus Cart account has been permanently deleted.',
-    });
-    router.push('/');
-  }
-
-  async function handleDeleteAccount() {
-    if (!auth || !auth.currentUser || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
-      return;
-    }
 
     try {
-      await performDeletion();
+      // Delete firestore doc first
+      await deleteDoc(userDocRef);
+      // Then delete the auth user
+      await deleteUser(user);
+      toast({
+        title: 'Account Deleted',
+        description: 'Your Campus Cart account has been permanently deleted.',
+      });
+      router.push('/');
     } catch (error: any) {
-      if (error.code === 'auth/requires-recent-login') {
+       if (error.code === 'auth/requires-recent-login') {
         toast({
           variant: 'destructive',
           title: 'Action Required',
@@ -248,6 +244,10 @@ export default function EditProfilePage() {
         });
       }
     }
+  }
+
+  async function handleDeleteAccount() {
+    await performDeletion();
   }
   
   async function handleReauthenticate(values: z.infer<typeof reauthSchema>) {
@@ -279,7 +279,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const isSaveDisabled = !form.formState.isDirty && !uploadPromise && !isUploading;
+  const isSaveDisabled = !form.formState.isDirty && !newlyUploadedUrl;
   const isEmailProvider = authUser?.providerData.some(p => p.providerId === 'password');
 
   return (
@@ -383,7 +383,7 @@ export default function EditProfilePage() {
                 )}
               />
 
-              <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled}>
+              <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled || isUploading}>
                 Save Changes
               </Button>
             </form>
@@ -459,9 +459,3 @@ export default function EditProfilePage() {
       </Dialog>
     </div>
   );
-
-    
-
-    
-
-    
