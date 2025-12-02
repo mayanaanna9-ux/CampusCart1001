@@ -26,6 +26,9 @@ export function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // For demonstrating the notification dot
+  const hasNotifications = true;
+
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
@@ -63,9 +66,14 @@ export function AppHeader() {
           <span className="font-headline text-xl font-bold">Campus Cart</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
+          <Button asChild variant="ghost" size="icon" className="relative">
+            <Link href="/notifications">
+              <Bell className="h-5 w-5" />
+              {hasNotifications && (
+                <div className="absolute bottom-1.5 left-1.5 h-2 w-2 rounded-full bg-red-500"></div>
+              )}
+              <span className="sr-only">Notifications</span>
+            </Link>
           </Button>
           {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted" />
