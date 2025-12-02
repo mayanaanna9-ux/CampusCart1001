@@ -147,7 +147,7 @@ export default function EditProfilePage() {
         
         setUploadPromise(promise);
       };
-      reader.readDataURL(file);
+      reader.readAsDataURL(file);
     }
   };
 
