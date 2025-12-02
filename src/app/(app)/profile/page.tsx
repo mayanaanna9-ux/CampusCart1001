@@ -52,18 +52,21 @@ export default function ProfilePage() {
 
   const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
 
-  const currentUser: User | null = userProfile ? {
-      id: userProfile.id,
-      name: userProfile.displayName,
-      avatarUrl: userProfile.profilePictureUrl || ''
-  } : null;
+  const isLoading = userLoading || profileLoading;
 
-  // This is mock data and should be replaced with a firestore query
-  const userItems = currentUser ? items.filter(item => item.sellerId === currentUser.id) : [];
-
-  if (userLoading || profileLoading || !currentUser) {
+  if (isLoading || !authUser) {
     return <ProfileSkeleton />;
   }
+  
+  // Create a user object from auth details, then enhance with profile data if it exists.
+  const currentUser: User = {
+    id: authUser.uid,
+    name: userProfile?.displayName || authUser.displayName || authUser.email || 'User',
+    avatarUrl: userProfile?.profilePictureUrl || authUser.photoURL || '',
+  };
+  
+  // This is mock data and should be replaced with a firestore query
+  const userItems = currentUser ? items.filter(item => item.sellerId === currentUser.id) : [];
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
