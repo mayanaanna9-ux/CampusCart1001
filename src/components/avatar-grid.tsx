@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -60,48 +61,49 @@ export function AvatarGrid() {
       return;
     }
     
-    // Immediately navigate for a faster UX
     router.push('/home');
     
+    const user = auth.currentUser;
     const isNewImageUpload = selectedAvatarUrl.startsWith('data:');
 
-    // 1. Optimistically update Firestore with local data URL
-    const userProfile = {
-        id: auth.currentUser.uid,
-        email: auth.currentUser.email,
-        displayName: auth.currentUser.displayName || auth.currentUser.email,
+    // 1. Always include the ID when creating the profile document in Firestore
+    const userProfileData = {
+        id: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email,
         profilePictureUrl: selectedAvatarUrl,
     };
-    const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-    setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+    const userDocRef = doc(firestore, 'users', user.uid);
+    
+    // 2. Optimistically set the document in Firestore with the temporary (or static) URL.
+    // This will create the document if it doesn't exist.
+    setDocumentNonBlocking(userDocRef, userProfileData, { merge: true });
 
-    // 2. If it's a static avatar, update Auth profile and we're done
+    // 3. If it's a static avatar URL, just update the Auth profile and we are done.
     if (!isNewImageUpload) {
-        try {
-            await updateProfile(auth.currentUser, { photoURL: selectedAvatarUrl });
-        } catch (error: any) {
+        updateProfile(user, { photoURL: selectedAvatarUrl }).catch(error => {
              toast({
                 variant: 'destructive',
                 title: 'Uh oh! Something went wrong.',
                 description: error.message || 'Could not update profile picture.',
             });
-        }
+        });
         return; // Exit
     }
 
-    // 3. If it is a new upload, handle it in the background
-    if (isNewImageUpload) {
+    // 4. If it's a new image upload, handle the upload in the background.
+    if (isNewImageUpload && storage) {
         setIsUploading(true);
-        const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}`);
+        const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
         
         uploadString(storageRef, selectedAvatarUrl, 'data_url')
           .then(uploadTask => getDownloadURL(uploadTask.ref))
           .then(downloadURL => {
-              // 4. Once uploaded, update both Auth and Firestore with the permanent URL
+              // Once uploaded, update both Auth and Firestore with the permanent URL
               if (auth.currentUser) {
                   updateProfile(auth.currentUser, { photoURL: downloadURL });
-                  const finalUserDocRef = doc(firestore, 'users', auth.currentUser.uid);
-                  setDocumentNonBlocking(finalUserDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                  // We only need to update the picture URL field now.
+                  setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
               }
           })
           .catch(error => {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -163,53 +164,54 @@ export default function EditProfilePage() {
       return;
     }
     
-    // Navigate immediately for an optimistic UI
     router.push('/profile');
+    
+    const user = auth.currentUser;
+    const { displayName, bio, profilePictureUrl } = values;
 
-    const { displayName, bio } = values;
     const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
-    const isStaticAvatarSelection = !isNewImageUpload && values.profilePictureUrl !== userProfile?.profilePictureUrl;
-
-
+    
     try {
-      const user = auth.currentUser;
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const textProfileData: Partial<UserProfile> = { displayName, bio };
-      
-      // 1. Always update Auth display name and text fields in Firestore non-blockingly
-      updateProfile(user, { displayName });
-      setDocumentNonBlocking(userDocRef, textProfileData, { merge: true });
+        // 1. Update Auth display name non-blockingly. This is quick.
+        if (displayName !== user.displayName) {
+          updateProfile(user, { displayName });
+        }
+        
+        // 2. Prepare text data for Firestore. CRITICAL: Always include the user's ID.
+        const textProfileData: Partial<UserProfile> = {
+          id: user.uid,
+          displayName,
+          bio,
+        };
+        
+        // 3. Update text data in Firestore non-blockingly.
+        const userDocRef = doc(firestore, 'users', user.uid);
+        setDocumentNonBlocking(userDocRef, textProfileData, { merge: true });
 
-      // 2. If it's a static avatar from placeholder-images.json, update both Auth and Firestore non-blockingly
-      if(isStaticAvatarSelection && values.profilePictureUrl) {
-        updateProfile(user, { photoURL: values.profilePictureUrl });
-        setDocumentNonBlocking(userDocRef, { profilePictureUrl: values.profilePictureUrl }, { merge: true });
-      }
+        // 4. Handle image update logic (if any)
+        if (isNewImageUpload && storage) {
+            // New local file was selected for upload
+            const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
+            uploadString(storageRef, newlyUploadedUrl, 'data_url')
+                .then(snapshot => getDownloadURL(snapshot.ref))
+                .then(downloadURL => {
+                    // Once uploaded, update both Auth and Firestore with the permanent URL
+                    if (auth.currentUser) {
+                        updateProfile(auth.currentUser, { photoURL: downloadURL });
+                        setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                    }
+                })
+                .catch(error => {
+                    toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your profile changes were saved, but the new image failed to upload.' });
+                });
+        } else if (profilePictureUrl !== (userProfile?.profilePictureUrl || user.photoURL)) {
+            // A pre-existing avatar was selected, not a new upload
+            if (profilePictureUrl) {
+                updateProfile(user, { photoURL: profilePictureUrl });
+                setDocumentNonBlocking(userDocRef, { profilePictureUrl: profilePictureUrl }, { merge: true });
+            }
+        }
 
-      // 3. If a new image was uploaded, handle the upload and final URL update in the background
-      if (isNewImageUpload && storage) {
-          setIsUploading(true); // Visually disable upload button
-          const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-          
-          // The upload now happens completely in the background. No `await` here.
-          uploadString(storageRef, newlyUploadedUrl, 'data_url')
-              .then(snapshot => getDownloadURL(snapshot.ref))
-              .then(downloadURL => {
-                  // 4. Once upload is complete, update both Auth and Firestore with the permanent URL
-                  if (auth.currentUser) { // Check again in case user logged out
-                      updateProfile(auth.currentUser, { photoURL: downloadURL });
-                      const finalUserDocRef = doc(firestore, 'users', auth.currentUser.uid);
-                      setDocumentNonBlocking(finalUserDocRef, { profilePictureUrl: downloadURL }, { merge: true });
-                  }
-                  setNewlyUploadedUrl(null);
-              })
-              .catch(error => {
-                  toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your profile changes were saved, but the new image failed to upload.' });
-              })
-              .finally(() => {
-                  setIsUploading(false); // Re-enable upload button
-              });
-      }
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -227,13 +229,14 @@ export default function EditProfilePage() {
     const user = auth.currentUser;
     
     try {
+        // Firestore doc must be deleted before the user account
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await deleteDoc(userDocRef);
         await deleteUser(user);
         toast({
           title: 'Account Deleted',
           description: 'Your Campus Cart account has been permanently deleted.',
         });
-        const userDocRef = doc(firestore, 'users', user.uid);
-        deleteDoc(userDocRef); // Delete firestore doc after auth deletion
         router.push('/');
     } catch (error: any) {
        if (error.code === 'auth/requires-recent-login') {

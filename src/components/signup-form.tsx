@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -24,6 +25,7 @@ import { useState } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { UserProfile } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -52,20 +54,24 @@ export function SignUpForm() {
     const user = userCredential.user;
     const displayName = name || user.displayName || user.email;
 
-    if (user.displayName !== displayName) {
+    // 1. Update Auth profile if the name is different
+    if (displayName && user.displayName !== displayName) {
       await updateProfile(user, { displayName });
     }
 
-    const userProfile = {
+    // 2. Create the Firestore user profile document.
+    // CRITICAL: Always include the `id` field to satisfy security rules on creation.
+    const userProfile: UserProfile = {
       id: user.uid,
       email: user.email,
-      displayName: displayName,
-      profilePictureUrl: user.photoURL,
+      displayName: displayName || '',
+      profilePictureUrl: user.photoURL || '',
     };
 
     const userDocRef = doc(firestore, 'users', user.uid);
-    setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+    setDocumentNonBlocking(userDocRef, userProfile, { merge: true }); // Use merge to be safe
 
+    // 3. Navigate based on whether a profile picture exists.
     if (!user.photoURL) {
       router.push('/setup-profile');
     } else {
