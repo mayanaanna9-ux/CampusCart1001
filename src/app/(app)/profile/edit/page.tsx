@@ -102,10 +102,10 @@ export default function EditProfilePage() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: {
-        displayName: userProfile?.displayName || authUser?.displayName || '',
-        bio: userProfile?.bio || '',
-        profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || ''
+    defaultValues: {
+        displayName: '',
+        bio: '',
+        profilePictureUrl: '',
     },
     mode: 'onChange'
   });
@@ -118,17 +118,14 @@ export default function EditProfilePage() {
   const isLoading = userLoading || profileLoading;
 
   useEffect(() => {
-    // Check if form is dirty or there's a new upload to avoid resetting on other changes
-    if (!form.formState.isDirty && !newlyUploadedUrl) {
-      if (userProfile || authUser) {
-        form.reset({
-          displayName: userProfile?.displayName || authUser?.displayName || '',
-          bio: userProfile?.bio || '',
-          profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || '',
-        });
-      }
+    if (userProfile || authUser) {
+      form.reset({
+        displayName: userProfile?.displayName || authUser?.displayName || '',
+        bio: userProfile?.bio || '',
+        profilePictureUrl: newlyUploadedUrl || userProfile?.profilePictureUrl || authUser?.photoURL || '',
+      });
     }
-  }, [userProfile, authUser, form, form.formState.isDirty, newlyUploadedUrl]);
+  }, [userProfile, authUser, form, newlyUploadedUrl]);
 
 
   if (isLoading || !authUser) {
@@ -150,7 +147,6 @@ export default function EditProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        // Set preview immediately
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
         setNewlyUploadedUrl(dataUrl);
       };
@@ -159,67 +155,78 @@ export default function EditProfilePage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth || !auth.currentUser || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
-      return;
+    if (!auth || !auth.currentUser || !firestore || !storage) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
+        return;
     }
     
     router.push('/profile');
-    
+
     const user = auth.currentUser;
-    const { displayName, bio, profilePictureUrl } = values;
+    const { displayName, bio } = values;
+    const profilePictureUrl = values.profilePictureUrl || ''; // Ensure it's not undefined
 
-    const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
+    const userDocRef = doc(firestore, 'users', user.uid);
+
+    // Prepare profile data, always including the user ID
+    const profileData: Partial<UserProfile> = {
+        id: user.uid,
+        email: user.email,
+        displayName,
+        bio,
+    };
     
-    try {
-        // 1. Update Auth display name non-blockingly. This is quick.
-        if (displayName !== user.displayName) {
-          updateProfile(user, { displayName });
-        }
-        
-        // 2. Prepare text data for Firestore. CRITICAL: Always include the user's ID.
-        const textProfileData: Partial<UserProfile> = {
-          id: user.uid,
-          displayName,
-          bio,
-        };
-        
-        // 3. Update text data in Firestore non-blockingly.
-        const userDocRef = doc(firestore, 'users', user.uid);
-        setDocumentNonBlocking(userDocRef, textProfileData, { merge: true });
+    // Determine if a new image was uploaded vs. a static avatar selected
+    const isNewImageUpload = profilePictureUrl.startsWith('data:');
 
-        // 4. Handle image update logic (if any)
-        if (isNewImageUpload && storage) {
-            // New local file was selected for upload
+    try {
+        if (isNewImageUpload) {
+            // It's a new local upload. Update text data first, but don't set the image URL yet.
+            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+            if (displayName !== user.displayName) {
+                updateProfile(user, { displayName });
+            }
+
+            // Start upload in background. On completion, update both auth and firestore URLs.
+            setIsUploading(true);
             const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-            uploadString(storageRef, newlyUploadedUrl, 'data_url')
+            uploadString(storageRef, profilePictureUrl, 'data_url')
                 .then(snapshot => getDownloadURL(snapshot.ref))
                 .then(downloadURL => {
-                    // Once uploaded, update both Auth and Firestore with the permanent URL
-                    if (auth.currentUser) {
-                        updateProfile(auth.currentUser, { photoURL: downloadURL });
-                        setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
+                    // Update both Auth and Firestore with the permanent URL
+                    if (auth.currentUser) { // Re-check current user
+                         updateProfile(auth.currentUser, { photoURL: downloadURL });
+                         setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
                     }
                 })
                 .catch(error => {
-                    toast({ variant: 'destructive', title: 'Image upload failed', description: 'Your profile changes were saved, but the new image failed to upload.' });
+                    console.error("Image upload failed:", error);
+                    toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Your profile was saved, but the new image failed to upload.' });
+                })
+                .finally(() => {
+                    setIsUploading(false);
                 });
-        } else if (profilePictureUrl !== (userProfile?.profilePictureUrl || user.photoURL)) {
-            // A pre-existing avatar was selected, not a new upload
-            if (profilePictureUrl) {
-                updateProfile(user, { photoURL: profilePictureUrl });
-                setDocumentNonBlocking(userDocRef, { profilePictureUrl: profilePictureUrl }, { merge: true });
+
+        } else {
+            // It's a static avatar URL or no change. Update everything.
+            profileData.profilePictureUrl = profilePictureUrl;
+            
+            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+            
+            // Update auth profile if display name or photo URL has changed
+            if (displayName !== user.displayName || profilePictureUrl !== user.photoURL) {
+                updateProfile(user, { displayName, photoURL: profilePictureUrl });
             }
         }
-
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Update Failed',
-            description: error.message || 'An unexpected error occurred while saving your profile.',
+            description: error.message || 'An unexpected error occurred.',
         });
     }
-  }
+}
+
 
   const performDeletion = async () => {
     if (!auth || !auth.currentUser || !firestore) {
@@ -229,15 +236,24 @@ export default function EditProfilePage() {
     const user = auth.currentUser;
     
     try {
-        // Firestore doc must be deleted before the user account
-        const userDocRef = doc(firestore, 'users', user.uid);
-        await deleteDoc(userDocRef);
         await deleteUser(user);
         toast({
-          title: 'Account Deleted',
-          description: 'Your Campus Cart account has been permanently deleted.',
+          title: 'Account Deletion Initiated',
+          description: 'Your account is being deleted. This may take a moment.',
         });
-        router.push('/');
+        // Non-blocking delete for Firestore doc
+        const userDocRef = doc(firestore, 'users', user.uid);
+        deleteDoc(userDocRef).then(() => {
+             toast({
+                title: 'Account Deleted',
+                description: 'Your Campus Cart account has been permanently deleted.',
+            });
+            router.push('/');
+        }).catch(error => {
+            // This might happen if the rules don't allow deletion after auth user is gone
+            // Or if there are other issues. It's less critical as the user account is gone.
+            console.error("Firestore document deletion failed:", error);
+        });
     } catch (error: any) {
        if (error.code === 'auth/requires-recent-login') {
         toast({
