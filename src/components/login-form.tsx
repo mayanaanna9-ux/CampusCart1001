@@ -55,11 +55,19 @@ export function LoginForm() {
       });
       router.push('/home');
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.message || "Could not sign in.",
-      });
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password') {
+            toast({
+                variant: "destructive",
+                title: "Invalid Credentials",
+                description: "The email or password you entered is incorrect. Please try again.",
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: error.message || "Could not sign in.",
+            });
+        }
     }
   }
 
