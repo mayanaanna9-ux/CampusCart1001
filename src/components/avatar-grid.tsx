@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -156,8 +157,8 @@ export function AvatarGrid() {
                 <div className="flex justify-center">
                     <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
                         <Button asChild variant="destructive" className="w-full" disabled={isUploading}>
-                            <div className='w-full'>
-                                {isUploading ? 'Uploading...' : 'Upload Image'}
+                            <div className='w-full text-center'>
+                                {'Upload Image'}
                                 <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
                             </div>
                         </Button>
@@ -165,7 +166,7 @@ export function AvatarGrid() {
                 </div>
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl}>
               Continue
             </Button>
           </div>
@@ -174,3 +175,5 @@ export function AvatarGrid() {
     </div>
   );
 }
+
+    

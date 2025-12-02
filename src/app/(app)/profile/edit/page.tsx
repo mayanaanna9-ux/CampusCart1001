@@ -279,7 +279,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const isSaveDisabled = !form.formState.isDirty && !isUploading;
+  const isSaveDisabled = !form.formState.isDirty && !uploadPromise && !isUploading;
   const isEmailProvider = authUser?.providerData.some(p => p.providerId === 'password');
 
   return (
@@ -299,9 +299,11 @@ export default function EditProfilePage() {
                 <Label>Profile Picture</Label>
                 <div className="flex items-start gap-4">
                     <div className="relative">
-                        <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
-                        <Label htmlFor="picture-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                            <Upload className="h-6 w-6 text-white" />
+                        <Label htmlFor="picture-upload" className="cursor-pointer">
+                            <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                                <Upload className="h-6 w-6 text-white" />
+                            </div>
                         </Label>
                         <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
                     </div>
@@ -457,6 +459,8 @@ export default function EditProfilePage() {
       </Dialog>
     </div>
   );
+
+    
 
     
 
