@@ -19,7 +19,7 @@ import { Eye, EyeOff, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useState } from 'react';
 
 const formSchema = z.object({
@@ -72,6 +72,31 @@ export function SignUpForm() {
           });
         }
       }
+  }
+
+  async function onGoogleSignIn() {
+    if (!auth) {
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh! Something went wrong.',
+          description: 'Firebase auth is not configured.',
+        });
+        return;
+    }
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        toast({
+            title: "Signed in with Google!",
+        });
+        router.push('/setup-profile');
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: error.message || "Could not sign in with Google.",
+        });
+    }
   }
 
   return (
@@ -145,6 +170,18 @@ export function SignUpForm() {
             <Button type="submit" className="w-full font-bold" size="lg">Sign Up</Button>
           </form>
         </Form>
+        <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+        </div>
+        <Button variant="outline" className="w-full font-bold" size="lg" onClick={onGoogleSignIn}>
+            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 109.8 512 0 402.2 0 256S109.8 0 244 0c73 0 135.7 28.7 182.4 73.5l-65.5 63.5C334.4 111.9 292.1 94.5 244 94.5c-83.3 0-151.7 68.2-151.7 152.1s68.4 152.1 151.7 152.1c96.5 0 131.2-69.5 136-104.3H244v-73.6h236.1c2.4 12.7 3.9 26.5 3.9 41.6z"></path></svg>
+            Google
+        </Button>
       </CardContent>
       <CardFooter className="flex flex-col items-center space-y-2">
          <p className="text-sm text-muted-foreground">
