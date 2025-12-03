@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ImagePlus, Upload, X, Loader2, UserPlus, AlertCircle } from 'lucide-react';
@@ -123,64 +122,67 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
-    router.push('/home');
+    
+    try {
+        const uploadedImageUrls: string[] = [];
 
-    const backgroundUpload = async () => {
-        try {
-            const uploadedImageUrls: string[] = [];
+        // Upload images to Firebase Storage
+        for (const image of values.imageUrls) {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
 
-            for (const image of values.imageUrls) {
-                const response = await fetch(image);
-                const blob = await response.blob();
-                const dataUrl = await new Promise<string>(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result as string);
-                    reader.readAsDataURL(blob);
-                });
+            const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
+            const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+            const downloadUrl = await getDownloadURL(uploadResult.ref);
+            uploadedImageUrls.push(downloadUrl);
+        }
+        
+        // Add item document to Firestore
+        const itemsCollection = collection(firestore, 'items');
+        const itemData = {
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            sellerId: user.uid,
+            imageUrls: uploadedImageUrls,
+            postedAt: serverTimestamp(),
+        };
+        
+        await addDoc(itemsCollection, itemData);
 
-                const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
-                const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-                const downloadUrl = await getDownloadURL(uploadResult.ref);
-                uploadedImageUrls.push(downloadUrl);
-            }
-            
-            const itemsCollection = collection(firestore, 'items');
-            const itemData = {
-                name: values.name,
-                description: values.description,
-                price: values.price,
-                sellerId: user.uid,
-                imageUrls: uploadedImageUrls,
-                postedAt: serverTimestamp(),
-            };
-            
-            addDoc(itemsCollection, itemData)
-              .then(() => {
-                toast({
-                  title: "Item Posted!",
-                  description: `${values.name} is now available for sale.`,
-                });
-              })
-              .catch(error => {
-                const permissionError = new FirestorePermissionError({
-                  path: itemsCollection.path,
-                  operation: 'create',
-                  requestResourceData: { ...itemData, postedAt: new Date().toISOString() },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-              });
+        toast({
+          title: "Item Posted!",
+          description: `${values.name} is now available for sale.`,
+        });
 
-        } catch(error: any) {
-            console.error("Error posting item:", error);
+        // Redirect only after successful creation
+        router.push('/home');
+
+    } catch(error: any) {
+        console.error("Error posting item:", error);
+        
+        if (error.code === 'permission-denied') {
+             const permissionError = new FirestorePermissionError({
+                path: 'items',
+                operation: 'create',
+                requestResourceData: { ...values, sellerId: user.uid, postedAt: new Date().toISOString() },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
             toast({
                 variant: 'destructive',
                 title: 'Upload Failed',
                 description: error.message || 'There was an error posting your item.',
             });
         }
-    };
-    
-    backgroundUpload();
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   if (userLoading) {
