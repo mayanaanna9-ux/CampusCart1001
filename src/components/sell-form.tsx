@@ -23,14 +23,12 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useStorage, useUser } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 const formSchema = z.object({
@@ -95,13 +93,18 @@ export function SellForm() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
-      const allPreviews = [...imagePreviews, ...newPreviews];
-      setImagePreviews(allPreviews);
-      
-      const currentImages = form.getValues('imageUrls') || [];
-      const allImages = [...currentImages, ...newPreviews];
-      form.setValue('imageUrls', allImages, { shouldValidate: true });
+      const newPreviews = Array.from(files).map(file => {
+          const reader = new FileReader();
+          return new Promise<string>(resolve => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+          });
+      });
+      Promise.all(newPreviews).then(dataUrls => {
+        const allPreviews = [...imagePreviews, ...dataUrls];
+        setImagePreviews(allPreviews);
+        form.setValue('imageUrls', allPreviews, { shouldValidate: true });
+      });
     }
   };
 
@@ -112,72 +115,62 @@ export function SellForm() {
     form.setValue('imageUrls', currentPreviews, { shouldValidate: true });
   }
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+ async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
+      return;
     }
     if (isGuest) {
-        toast({ variant: 'destructive', title: 'Action not allowed', description: 'Please create an account to sell items.' });
-        return;
+      toast({ variant: 'destructive', title: 'Action not allowed', description: 'Please create an account to sell items.' });
+      return;
     }
 
     setIsSubmitting(true);
-    router.push('/home'); // Immediately redirect
 
-    // The rest of the function runs in the background
-    (async () => {
-        try {
-            const uploadedImageUrls: string[] = [];
-            
-            // Step 1: Upload images to Firebase Storage
-            for (const image of values.imageUrls) {
-                const response = await fetch(image);
-                const blob = await response.blob();
-                const dataUrl = await new Promise<string>(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result as string);
-                    reader.readAsDataURL(blob);
-                });
+    try {
+      // Step 1: Immediately create the document with local data URLs for an optimistic UI update.
+      const itemData = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        sellerId: user.uid,
+        imageUrls: values.imageUrls, // Use local data URLs initially
+        postedAt: serverTimestamp(),
+      };
+      
+      const itemsCollection = collection(firestore, 'items');
+      const docRefPromise = addDocumentNonBlocking(itemsCollection, itemData);
 
-                const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
-                const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-                const downloadUrl = await getDownloadURL(uploadResult.ref);
-                uploadedImageUrls.push(downloadUrl);
-            }
-            
-            // Step 2: Add item document to Firestore non-blockingly
-            const itemsCollection = collection(firestore, 'items');
-            const itemData = {
-                name: values.name,
-                description: values.description,
-                price: values.price,
-                sellerId: user.uid,
-                imageUrls: uploadedImageUrls,
-                postedAt: serverTimestamp(),
-            };
-            
-            // This function is non-blocking and handles its own errors
-            addDocumentNonBlocking(itemsCollection, itemData);
+      // Step 2: Immediately redirect the user.
+      router.push('/home');
+      toast({
+        title: "Posting your item...",
+        description: `${values.name} will appear on the feed shortly.`,
+      });
 
-            toast({
-              title: "Item Posted!",
-              description: `${values.name} is now available for sale.`,
-            });
+      // Step 3: In the background, wait for the doc to be created, then upload images and update the doc.
+      const docRef = await docRefPromise;
 
-        } catch(error: any) {
-            console.error("Error posting item in background:", error);
-            // Since we've already redirected, we show a toast for failure.
-            toast({
-                variant: 'destructive',
-                title: 'Upload Failed',
-                description: error.message || 'There was an error posting your item in the background.',
-            });
-             // No need to emit a permission error here as addDocumentNonBlocking already handles it
-        } finally {
-            // No need to set isSubmitting to false as the component is unmounted
-        }
-    })();
+      const uploadedImageUrls = await Promise.all(
+        values.imageUrls.map(async (localUrl) => {
+          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+          const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+          return getDownloadURL(uploadResult.ref);
+        })
+      );
+      
+      // Step 4: Update the document with the final, permanent URLs.
+      updateDocumentNonBlocking(docRef, { imageUrls: uploadedImageUrls });
+
+    } catch (error: any) {
+      console.error("Error posting item:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: error.message || 'There was an error posting your item.',
+      });
+      setIsSubmitting(false); // Only re-enable form on failure
+    }
   }
   
   if (userLoading) {
