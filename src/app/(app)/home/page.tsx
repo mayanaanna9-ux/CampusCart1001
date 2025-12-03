@@ -71,10 +71,23 @@ export default function HomePage() {
 
   const getComparableDate = (postedAt: any): Date => {
     if (!postedAt) return new Date(0); // Return a very old date if undefined
-    if (postedAt.toDate) return postedAt.toDate(); // It's a Firestore Timestamp
-    if (typeof postedAt === 'string') return new Date(postedAt); // It's an ISO string
-    if (postedAt instanceof Date) return postedAt; // It's already a Date object
-    return new Date(0); // Fallback for unknown types
+    // Check for Firestore Timestamp
+    if (typeof postedAt === 'object' && postedAt !== null && typeof postedAt.toDate === 'function') {
+      return postedAt.toDate();
+    }
+    // Check for ISO string or other date string formats
+    if (typeof postedAt === 'string') {
+      const date = new Date(postedAt);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    // Check if it's already a Date object
+    if (postedAt instanceof Date) {
+      return postedAt;
+    }
+    // Fallback for unknown types
+    return new Date(0);
   };
 
   const todaysItems = (items || [])
@@ -113,7 +126,7 @@ export default function HomePage() {
       
       <section className="space-y-4 mt-8">
         <h2 className="font-headline text-2xl font-bold">Recommended For You</h2>
-        <Recommendations allItems={items || []} allUsers={users} userHistoryData={userHistory} />
+        <Recommendations allItems={items || []} userHistoryData={userHistory} />
       </section>
 
     </div>
