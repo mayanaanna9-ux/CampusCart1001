@@ -1,8 +1,9 @@
 
+'use client';
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { items, users } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Carousel,
@@ -16,19 +17,73 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, ShoppingCart, Tag } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import type { Item, UserProfile } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ItemPageProps = {
   params: { id: string };
 };
 
+
+function ItemPageSkeleton() {
+    return (
+        <div className="container mx-auto max-w-4xl p-4 md:p-6">
+            <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                    <Skeleton className="aspect-square w-full rounded-lg" />
+                </div>
+                <div className="space-y-6">
+                    <div>
+                        <div className="flex gap-2 mb-2">
+                           <Skeleton className="h-6 w-20" />
+                           <Skeleton className="h-6 w-24" />
+                        </div>
+                        <Skeleton className="h-10 w-3/4" />
+                        <Skeleton className="h-12 w-1/3 mt-4" />
+                    </div>
+                    <div>
+                        <Skeleton className="h-6 w-24 mb-2" />
+                        <Skeleton className="h-20 w-full" />
+                    </div>
+                     <div>
+                        <Skeleton className="h-6 w-32 mb-2" />
+                        <Skeleton className="h-20 w-full" />
+                    </div>
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function ItemPage({ params }: ItemPageProps) {
-  const item = items.find((i) => i.id === params.id);
+  const firestore = useFirestore();
+
+  const itemRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'items', params.id);
+  }, [firestore, params.id]);
+
+  const { data: item, isLoading: itemLoading } = useDoc<Item>(itemRef);
+
+  const sellerRef = useMemoFirebase(() => {
+    if (!firestore || !item?.sellerId) return null;
+    return doc(firestore, 'users', item.sellerId);
+  }, [firestore, item]);
+  
+  const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
+
+
+  if (itemLoading || sellerLoading) {
+    return <ItemPageSkeleton />;
+  }
 
   if (!item) {
     notFound();
   }
 
-  const seller = users.find((u) => u.id === item.sellerId);
   const images = (item.imageUrls || []).map(urlOrId => PlaceHolderImages.find(p => p.id === urlOrId || p.imageUrl === urlOrId)).filter(Boolean);
 
   const conditionMap = {
@@ -95,10 +150,10 @@ export default function ItemPage({ params }: ItemPageProps) {
               <Card>
                 <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <UserAvatar name={seller.name} avatarUrl={seller.avatarUrl} className="h-12 w-12" />
+                        <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-12 w-12" />
                         <div>
-                            <p className="font-semibold">{seller.name}</p>
-                            <Link href="/profile" className="text-sm text-primary hover:underline">View Profile</Link>
+                            <p className="font-semibold">{seller.displayName}</p>
+                            <Link href={`/profile/${seller.id}`} className="text-sm text-primary hover:underline">View Profile</Link>
                         </div>
                     </div>
                     <Button asChild variant="outline">

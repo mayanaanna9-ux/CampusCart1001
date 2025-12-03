@@ -1,28 +1,43 @@
 
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Item, User } from '@/lib/types';
+import type { Item, UserProfile } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserAvatar } from './user-avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from './ui/badge';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from './ui/skeleton';
 
 type FeaturedItemCardProps = {
   item: Item;
-  seller: User;
 };
 
-export function FeaturedItemCard({ item, seller }: FeaturedItemCardProps) {
+export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
+  const firestore = useFirestore();
+  const sellerRef = useMemoFirebase(() => {
+    if (!firestore || !item.sellerId) return null;
+    return doc(firestore, 'users', item.sellerId);
+  }, [firestore, item.sellerId]);
+  
+  const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
+
   const imageUrl = item.imageUrls?.[0];
   const placeholder = PlaceHolderImages.find(p => p.imageUrl === imageUrl || p.id === imageUrl);
-  const timeAgo = new Intl.RelativeTimeFormat('en', { style: 'short' }).format(
-      Math.round((new Date(item.postedAt).getTime() - Date.now()) / (1000 * 60 * 60)), // in hours
-      'hour'
-  );
+  
+  let timeAgo = '';
+  if (item.postedAt) {
+    const postedDate = (item.postedAt as any)?.toDate ? (item.postedAt as any).toDate() : new Date(item.postedAt);
+    const hoursAgo = Math.round((Date.now() - postedDate.getTime()) / (1000 * 60 * 60));
+    timeAgo = new Intl.RelativeTimeFormat('en', { style: 'short' }).format(-hoursAgo, 'hour');
+  }
 
 
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-lg bg-muted border-none">
+    <Card className="overflow-hidden transition-all hover:shadow-lg bg-card border-none">
        <Link href={`/items/${item.id}`} className="block">
         <CardContent className="p-0">
           {placeholder && (
@@ -42,10 +57,17 @@ export function FeaturedItemCard({ item, seller }: FeaturedItemCardProps) {
                 <h3 className="font-headline text-lg font-semibold truncate">{item.name}</h3>
                 <div className="flex items-center justify-between">
                     <p className="text-xl font-bold text-primary">${item.price.toFixed(2)}</p>
-                    <div className="flex items-center gap-2">
-                        <UserAvatar name={seller.name} avatarUrl={seller.avatarUrl} className="h-6 w-6" />
-                        <span className="text-sm font-medium text-muted-foreground">{seller.name}</span>
-                    </div>
+                     {sellerLoading ? (
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <Skeleton className="h-5 w-16" />
+                        </div>
+                    ) : seller && (
+                        <div className="flex items-center gap-2">
+                            <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
+                            <span className="text-sm font-medium text-muted-foreground">{seller.displayName}</span>
+                        </div>
+                    )}
                 </div>
             </div>
         </CardContent>

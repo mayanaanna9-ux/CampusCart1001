@@ -1,14 +1,13 @@
 
 'use client';
 
-import { items } from '@/lib/data';
 import { UserAvatar } from '@/components/user-avatar';
 import { ItemCard } from '@/components/item-card';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 import type { User as AuthUser } from 'firebase/auth';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,9 +31,18 @@ function ProfileSkeleton() {
         </TabsList>
         <TabsContent value="selling">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground">Loading items...</p>
-                </div>
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                        <div className="flex items-center gap-3 p-3">
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                            <Skeleton className="h-5 flex-1" />
+                        </div>
+                        <Skeleton className="aspect-square w-full" />
+                        <div className="p-3">
+                            <Skeleton className="h-6 w-1/4" />
+                        </div>
+                    </div>
+                ))}
             </div>
         </TabsContent>
         </Tabs>
@@ -53,8 +61,15 @@ export default function ProfilePage() {
   }, [firestore, authUser]);
 
   const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
+  
+  const userItemsQuery = useMemoFirebase(() => {
+    if (!firestore || !authUser) return null;
+    return query(collection(firestore, 'items'), where('sellerId', '==', authUser.uid));
+  }, [firestore, authUser]);
 
-  const isLoading = userLoading || profileLoading;
+  const { data: userItems, isLoading: itemsLoading } = useCollection<Item>(userItemsQuery);
+
+  const isLoading = userLoading || profileLoading || itemsLoading;
 
   if (isLoading || !authUser) {
     return <ProfileSkeleton />;
@@ -65,9 +80,6 @@ export default function ProfilePage() {
     name: userProfile?.displayName || authUser.displayName || authUser.email || 'User',
     avatarUrl: userProfile?.profilePictureUrl || authUser.photoURL || '',
   };
-  
-  // This is mock data and should be replaced with a firestore query
-  const userItems = currentUser ? items.filter(item => item.sellerId === currentUser.id) : [];
 
   const joinDate = new Date(authUser?.metadata.creationTime || Date.now());
 
@@ -92,20 +104,20 @@ export default function ProfilePage() {
 
       <Tabs defaultValue="selling" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="selling">Selling ({userItems.length})</TabsTrigger>
+          <TabsTrigger value="selling">Selling ({userItems?.length || 0})</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
         </TabsList>
         <TabsContent value="selling">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                {userItems.length > 0 ? (
+                {userItems && userItems.length > 0 ? (
                     userItems.map(item => (
-                        <ItemCard key={item.id} item={item} seller={currentUser} />
+                        <ItemCard key={item.id} item={item} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-12">
                         <p className="text-muted-foreground">You haven't listed any items yet.</p>
                         <Button variant="link" asChild>
-                            <a href="/sell">Sell an item</a>
+                            <Link href="/sell">Sell an item</Link>
                         </Button>
                     </div>
                 )}
