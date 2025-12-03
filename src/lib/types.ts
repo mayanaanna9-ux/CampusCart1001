@@ -25,7 +25,7 @@ export type Item = {
   condition: 'new' | 'used-like-new' | 'used-good' | 'used-fair';
   sellerId: string;
   imageUrls: string[];
-  postedAt: string; // ISO string
+  postedAt: Timestamp | string; // Allow both for optimistic updates and server values
 };
 
 export type MessageThread = {
@@ -55,3 +55,5 @@ export type Message = {
   text: string;
   timestamp: Timestamp; // ISO string
 };
+
+    
