@@ -1,3 +1,4 @@
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -28,7 +29,7 @@ export default function ItemPage({ params }: ItemPageProps) {
   }
 
   const seller = users.find((u) => u.id === item.sellerId);
-  const images = item.imageIds.map(id => PlaceHolderImages.find(p => p.id === id)).filter(Boolean);
+  const images = (item.imageUrls || []).map(urlOrId => PlaceHolderImages.find(p => p.id === urlOrId || p.imageUrl === urlOrId)).filter(Boolean);
 
   const conditionMap = {
     'new': 'New',

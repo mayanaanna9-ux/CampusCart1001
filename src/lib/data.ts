@@ -21,7 +21,7 @@ export const items: Item[] = [
     category: 'gadgets',
     condition: 'used-good',
     sellerId: 'user1',
-    imageUrls: ['item1_1', 'item1_2'],
+    imageUrls: [getImage('item1_1'), getImage('item1_2')],
     postedAt: new Date().toISOString(),
   },
   {
@@ -32,7 +32,7 @@ export const items: Item[] = [
     category: 'books',
     condition: 'used-like-new',
     sellerId: 'user2',
-    imageUrls: ['item2_1'],
+    imageUrls: [getImage('item2_1')],
     postedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -43,7 +43,7 @@ export const items: Item[] = [
     category: 'clothes',
     condition: 'used-good',
     sellerId: 'user3',
-    imageUrls: ['item3_1'],
+    imageUrls: [getImage('item3_1')],
     postedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -54,7 +54,7 @@ export const items: Item[] = [
     category: 'food',
     condition: 'new',
     sellerId: 'user4',
-    imageUrls: ['item4_1'],
+    imageUrls: [getImage('item4_1')],
     postedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
   {
@@ -65,7 +65,7 @@ export const items: Item[] = [
     category: 'gadgets',
     condition: 'used-like-new',
     sellerId: 'user1',
-    imageUrls: ['item5_1'],
+    imageUrls: [getImage('item5_1')],
     postedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
   },
   {
@@ -76,7 +76,7 @@ export const items: Item[] = [
     category: 'books',
     condition: 'used-fair',
     sellerId: 'user2',
-    imageUrls: ['item6_1'],
+    imageUrls: [getImage('item6_1')],
     postedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
   },
 ];

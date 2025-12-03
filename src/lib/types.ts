@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type User = {
@@ -35,7 +36,7 @@ export type MessageThread = {
   messages: Message[];
   itemPreview: {
     name: string;
-    imageId: string;
+    imageUrl: string;
   }
   lastMessageText: string;
   lastMessageTimestamp: Timestamp;

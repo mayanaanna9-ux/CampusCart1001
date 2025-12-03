@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Item, User } from '@/lib/types';
@@ -11,8 +12,9 @@ type ItemCardProps = {
 };
 
 export function ItemCard({ item, seller }: ItemCardProps) {
-  const imageId = item.imageIds[0];
-  const placeholder = PlaceHolderImages.find(p => p.id === imageId);
+  // Use imageUrls which is correct according to types, and safely access the first element
+  const imageUrl = item.imageUrls?.[0];
+  const placeholder = PlaceHolderImages.find(p => p.imageUrl === imageUrl || p.id === imageUrl);
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg">
