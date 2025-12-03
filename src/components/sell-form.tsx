@@ -17,18 +17,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Upload, X, Loader2 } from 'lucide-react';
+import { ImagePlus, Upload, X, Loader2, UserPlus, AlertCircle } from 'lucide-react';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
+import { useFirestore, useStorage, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import Link from 'next/link';
+import { Skeleton } from './ui/skeleton';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
@@ -39,13 +41,41 @@ const formSchema = z.object({
   imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
 });
 
+function SellFormSkeleton() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Post a New Item</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-1/3" />
+                    <div className="grid grid-cols-3 gap-4">
+                        <Skeleton className="aspect-square w-full" />
+                        <Skeleton className="aspect-square w-full" />
+                        <Skeleton className="aspect-square w-full" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-20 w-full" />
+                </div>
+                 <Skeleton className="h-12 w-full" />
+            </CardContent>
+        </Card>
+    )
+}
+
 export function SellForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const auth = useAuth();
   const firestore = useFirestore();
   const storage = useStorage();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -59,6 +89,9 @@ export function SellForm() {
     },
     mode: 'onChange',
   });
+
+  const isGuest = user?.isAnonymous;
+  const isFormDisabled = isSubmitting || isGuest;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -85,6 +118,11 @@ export function SellForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
         return;
     }
+    if (isGuest) {
+        toast({ variant: 'destructive', title: 'Action not allowed', description: 'Please create an account to sell items.' });
+        return;
+    }
+
     setIsSubmitting(true);
     router.push('/home');
 
@@ -147,11 +185,31 @@ export function SellForm() {
     
     backgroundUpload();
   }
+  
+  if (userLoading) {
+      return <SellFormSkeleton />;
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Post a New Item</CardTitle>
+        {isGuest && (
+             <CardDescription className="!mt-4">
+                 <div className="flex items-center gap-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                     <AlertCircle className="h-6 w-6 text-destructive" />
+                     <div className="flex-1">
+                        <p className="font-semibold text-destructive">Guest accounts cannot sell items.</p>
+                        <p className="text-sm text-destructive/80">Please create a full account to start selling.</p>
+                        <Button asChild variant="link" className="p-0 h-auto text-destructive">
+                            <Link href="/signup">
+                                <UserPlus className="mr-2" /> Create Account
+                            </Link>
+                        </Button>
+                     </div>
+                 </div>
+             </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -173,20 +231,20 @@ export function SellForm() {
                                 size="icon"
                                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                                 onClick={() => removeImage(index)}
-                                disabled={isSubmitting}
+                                disabled={isFormDisabled}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
-                          <Label htmlFor="file-upload" className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-card hover:bg-muted/50">
+                          <Label htmlFor="file-upload" className={cn("flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-card", isFormDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-muted/50')}>
                             <div className="text-center">
                                 <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground" />
                                 <span className="mt-2 block text-sm font-medium text-muted-foreground">
                                     Upload
                                 </span>
                             </div>
-                             <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} accept="image/png, image/jpeg, image/gif" disabled={isSubmitting}/>
+                             <Input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} accept="image/png, image/jpeg, image/gif" disabled={isFormDisabled}/>
                           </Label>
                         </div>
                       <FormMessage />
@@ -202,7 +260,7 @@ export function SellForm() {
                 <FormItem>
                   <FormLabel>Item Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., MacBook Air" {...field} disabled={isSubmitting} />
+                    <Input placeholder="e.g., MacBook Air" {...field} disabled={isFormDisabled} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,7 +274,7 @@ export function SellForm() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe your item in detail..." className="min-h-[120px]" {...field} disabled={isSubmitting} />
+                    <Textarea placeholder="Describe your item in detail..." className="min-h-[120px]" {...field} disabled={isFormDisabled} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -230,7 +288,7 @@ export function SellForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -256,7 +314,7 @@ export function SellForm() {
                   <FormItem>
                     <FormLabel>Price ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isSubmitting} />
+                      <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isFormDisabled} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -270,7 +328,7 @@ export function SellForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Condition</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select the item's condition" />
@@ -288,7 +346,7 @@ export function SellForm() {
               )}
             />
 
-            <Button type="submit" size="lg" className="w-full font-bold" disabled={isSubmitting}>
+            <Button type="submit" size="lg" className="w-full font-bold" disabled={isFormDisabled}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Posting...' : 'Sell'}
             </Button>
@@ -298,3 +356,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
