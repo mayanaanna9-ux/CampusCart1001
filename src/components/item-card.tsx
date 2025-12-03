@@ -24,8 +24,11 @@ export function ItemCard({ item }: ItemCardProps) {
   
   const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
 
-  const imageUrl = item.imageUrls?.[0];
-  const placeholder = PlaceHolderImages.find(p => p.imageUrl === imageUrl || p.id === imageUrl);
+  const rawImageUrl = item.imageUrls?.[0];
+  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl);
+  const displayUrl = placeholder?.imageUrl || rawImageUrl;
+  const imageHint = placeholder?.imageHint;
+
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg">
@@ -44,15 +47,15 @@ export function ItemCard({ item }: ItemCardProps) {
                 </>
             ) : null}
           </div>
-          {placeholder && (
+          {displayUrl && (
             <div className="aspect-square w-full overflow-hidden bg-muted">
               <Image
-                src={placeholder.imageUrl}
+                src={displayUrl}
                 alt={item.name}
                 width={400}
                 height={400}
                 className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                data-ai-hint={placeholder.imageHint}
+                data-ai-hint={imageHint}
               />
             </div>
           )}

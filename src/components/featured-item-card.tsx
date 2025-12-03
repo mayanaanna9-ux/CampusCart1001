@@ -25,8 +25,10 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
   
   const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
 
-  const imageUrl = item.imageUrls?.[0];
-  const placeholder = PlaceHolderImages.find(p => p.imageUrl === imageUrl || p.id === imageUrl);
+  const rawImageUrl = item.imageUrls?.[0];
+  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl);
+  const displayUrl = placeholder?.imageUrl || rawImageUrl;
+  const imageHint = placeholder?.imageHint;
   
   let timeAgo = '';
   if (item.postedAt) {
@@ -40,15 +42,15 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
     <Card className="overflow-hidden transition-all hover:shadow-lg bg-card border-none">
        <Link href={`/items/${item.id}`} className="block">
         <CardContent className="p-0">
-          {placeholder && (
+          {displayUrl && (
             <div className="aspect-video w-full overflow-hidden relative">
               <Image
-                src={placeholder.imageUrl}
+                src={displayUrl}
                 alt={item.name}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover transition-transform duration-300 hover:scale-105"
-                data-ai-hint={placeholder.imageHint}
+                data-ai-hint={imageHint}
               />
                <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>
             </div>
