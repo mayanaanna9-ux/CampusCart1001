@@ -4,7 +4,7 @@
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Item, User } from '@/lib/types';
+import type { Item } from '@/lib/types';
 import { Recommendations } from '@/components/recommendations';
 import {
   Carousel,
@@ -69,16 +69,18 @@ export default function HomePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const getComparableDate = (postedAt: any): Date => {
+    if (!postedAt) return new Date(0); // Return a very old date if undefined
+    if (postedAt.toDate) return postedAt.toDate(); // It's a Firestore Timestamp
+    if (typeof postedAt === 'string') return new Date(postedAt); // It's an ISO string
+    if (postedAt instanceof Date) return postedAt; // It's already a Date object
+    return new Date(0); // Fallback for unknown types
+  };
+
   const todaysItems = (items || [])
-    .filter(item => {
-        const postedAt = (item.postedAt as any)?.toDate(); // Firestore timestamp
-        return postedAt ? postedAt >= today : new Date(item.postedAt) >= today;
-    })
-    .sort((a, b) => {
-        const dateA = (a.postedAt as any)?.toDate ? (a.postedAt as any).toDate() : new Date(a.postedAt);
-        const dateB = (b.postedAt as any)?.toDate ? (b.postedAt as any).toDate() : new Date(b.postedAt);
-        return dateB.getTime() - dateA.getTime();
-    });
+    .filter(item => getComparableDate(item.postedAt) >= today)
+    .sort((a, b) => getComparableDate(b.postedAt).getTime() - getComparableDate(a.postedAt).getTime());
+
 
   return (
     <div className="container mx-auto max-w-5xl p-4 md:p-6">
