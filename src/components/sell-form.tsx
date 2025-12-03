@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Upload, X, Loader2, UserPlus, AlertCircle } from 'lucide-react';
+import { ImagePlus, Loader2, X, UserPlus, AlertCircle } from 'lucide-react';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -36,7 +35,7 @@ const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
-  imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
+  imageUrls: z.array(z.string()).min(1, 'Please upload at least one image.'),
 });
 
 function SellFormSkeleton() {
@@ -126,7 +125,7 @@ export function SellForm() {
     try {
         const uploadedImageUrls: string[] = [];
 
-        // Upload images to Firebase Storage
+        // Step 1: Upload images to Firebase Storage first
         for (const image of values.imageUrls) {
             const response = await fetch(image);
             const blob = await response.blob();
@@ -142,14 +141,14 @@ export function SellForm() {
             uploadedImageUrls.push(downloadUrl);
         }
         
-        // Add item document to Firestore
+        // Step 2: Add item document to Firestore with the uploaded URLs
         const itemsCollection = collection(firestore, 'items');
         const itemData = {
             name: values.name,
             description: values.description,
             price: values.price,
             sellerId: user.uid,
-            imageUrls: uploadedImageUrls,
+            imageUrls: uploadedImageUrls, // Use the final URLs
             postedAt: serverTimestamp(),
         };
         
@@ -160,7 +159,7 @@ export function SellForm() {
           description: `${values.name} is now available for sale.`,
         });
 
-        // Redirect only after successful creation
+        // Step 3: Redirect only after successful creation
         router.push('/home');
 
     } catch(error: any) {
