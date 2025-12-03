@@ -4,13 +4,15 @@
 import { useState, useRef, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, writeBatch } from 'firebase/firestore';
 import { UserAvatar } from '@/components/user-avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MessageThread, Message } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface ChatViewProps {
   thread: MessageThread;
@@ -26,12 +28,12 @@ export function ChatView({ thread, currentUser }: ChatViewProps) {
   const otherParticipant = otherParticipantId ? thread.participantDetails[otherParticipantId] : null;
 
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !currentUser) return null;
     return query(
-        collection(firestore, 'messageThreads', thread.id, 'messages'), 
+        collection(firestore, 'users', currentUser.uid, 'messageThreads', thread.id, 'messages'), 
         orderBy('timestamp', 'asc')
     );
-  }, [firestore, thread.id]);
+  }, [firestore, currentUser, thread.id]);
   
   const { data: messages, isLoading } = useCollection<Message>(messagesQuery);
   
@@ -46,17 +48,56 @@ export function ChatView({ thread, currentUser }: ChatViewProps) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firestore || !newMessage.trim()) return;
+    if (!firestore || !newMessage.trim() || !otherParticipantId) return;
 
-    const messagesCollection = collection(firestore, 'messageThreads', thread.id, 'messages');
-    
-    addDoc(messagesCollection, {
-        senderId: currentUser.uid,
-        text: newMessage,
-        timestamp: serverTimestamp(),
-    }).catch(error => console.error("Error sending message:", error));
-
+    const messageText = newMessage.trim();
     setNewMessage('');
+
+    const timestamp = serverTimestamp();
+
+    const messageData = {
+      senderId: currentUser.uid,
+      text: messageText,
+      timestamp: timestamp,
+    };
+    
+    // Use a batch to perform multiple writes atomically
+    const batch = writeBatch(firestore);
+
+    // 1. Add message to current user's message collection
+    const currentUserMessagesRef = collection(firestore, 'users', currentUser.uid, 'messageThreads', thread.id, 'messages');
+    batch.set(doc(currentUserMessagesRef), messageData);
+
+    // 2. Add message to other participant's message collection
+    const otherUserMessagesRef = collection(firestore, 'users', otherParticipantId, 'messageThreads', thread.id, 'messages');
+    batch.set(doc(otherUserMessagesRef), messageData);
+
+    // 3. Update thread metadata for current user
+    const currentUserThreadRef = doc(firestore, 'users', currentUser.uid, 'messageThreads', thread.id);
+    batch.update(currentUserThreadRef, {
+        lastMessageText: messageText,
+        lastMessageTimestamp: timestamp,
+    });
+
+    // 4. Update thread metadata for other participant
+    const otherUserThreadRef = doc(firestore, 'users', otherParticipantId, 'messageThreads', thread.id);
+    batch.update(otherUserThreadRef, {
+        lastMessageText: messageText,
+        lastMessageTimestamp: timestamp,
+    });
+
+    // Commit the batch
+    batch.commit().catch(error => {
+      console.error("Error sending message:", error);
+      // It's hard to know which specific operation failed. We'll emit a generic write error for the thread.
+      const permissionError = new FirestorePermissionError({
+          path: currentUserThreadRef.path,
+          operation: 'write',
+          requestResourceData: { message: messageData },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+
   };
 
 
@@ -110,3 +151,5 @@ export function ChatView({ thread, currentUser }: ChatViewProps) {
     </div>
   );
 }
+
+    

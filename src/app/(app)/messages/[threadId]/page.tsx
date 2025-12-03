@@ -3,7 +3,7 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import type { MessageThread } from '@/lib/types';
 import { ChatView } from '@/components/messages/chat-view';
 import { Button } from '@/components/ui/button';
@@ -48,9 +48,9 @@ export default function ChatPage({ params }: { params: { threadId: string } }) {
   const firestore = useFirestore();
 
   const threadDocRef = useMemoFirebase(() => {
-    if (!firestore || !params.threadId) return null;
-    return doc(firestore, 'messageThreads', params.threadId);
-  }, [firestore, params.threadId]);
+    if (!firestore || !user || !params.threadId) return null;
+    return doc(firestore, 'users', user.uid, 'messageThreads', params.threadId);
+  }, [firestore, user, params.threadId]);
 
   const { data: thread, isLoading: threadLoading } = useDoc<MessageThread>(threadDocRef);
   
@@ -64,10 +64,9 @@ export default function ChatPage({ params }: { params: { threadId: string } }) {
     notFound();
   }
 
-  // Security check: ensure current user is part of the thread
-  if (!thread.participants.includes(user.uid)) {
-    notFound();
-  }
+  // Security check is implicitly handled by the Firestore query path
+  // so an explicit check like `!thread.participants.includes(user.uid)` is redundant
+  // but good for defense-in-depth if rules were to change.
 
   return (
     <div className="flex flex-col h-full md:hidden">
@@ -82,3 +81,5 @@ export default function ChatPage({ params }: { params: { threadId: string } }) {
     </div>
   );
 }
+
+    

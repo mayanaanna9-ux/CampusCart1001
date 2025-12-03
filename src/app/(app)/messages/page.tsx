@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { MessageThread } from '@/lib/types';
 import { ConversationList } from '@/components/messages/conversation-list';
@@ -52,14 +52,9 @@ export default function MessagesPage() {
 
   const threadsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    // This query is a bit complex. It tries to find threads where the current user is either the buyer or seller.
-    // Firestore can't do OR queries on different fields, so in a real, scalable app,
-    // you would typically have a 'participants' array field on the thread document.
-    // e.g., where('participants', 'array-contains', user.uid)
-    // For this prototype with limited data, we'll fetch where user is buyer.
+    // Query for message threads nested under the current user's document
     return query(
-        collection(firestore, 'messageThreads'),
-        where('buyerId', '==', user.uid),
+        collection(firestore, 'users', user.uid, 'messageThreads'),
         orderBy('lastMessageTimestamp', 'desc')
     );
   }, [user, firestore]);
@@ -95,3 +90,5 @@ export default function MessagesPage() {
     </div>
   );
 }
+
+    

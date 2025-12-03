@@ -164,6 +164,22 @@
         "timestamp"
       ]
     },
+    "MessageThread": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MessageThread",
+      "type": "object",
+      "description": "Represents a conversation thread between two users about an item.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the thread." },
+        "itemId": { "type": "string", "description": "The ID of the item being discussed." },
+        "participants": { "type": "array", "items": { "type": "string" }, "description": "An array containing the UIDs of both participants." },
+        "participantDetails": { "type": "object", "description": "Denormalized user info for display." },
+        "itemPreview": { "type": "object", "description": "Denormalized item info for display." },
+        "lastMessageText": { "type": "string", "description": "The text of the last message sent." },
+        "lastMessageTimestamp": { "type": "string", "format": "date-time", "description": "Timestamp of the last message." }
+      },
+      "required": ["id", "itemId", "participants", "lastMessageTimestamp"]
+    },
     "Avatar": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Avatar",
@@ -248,7 +264,27 @@
         }
       },
       {
-        "path": "/users/{userId}/chats/{chatId}/messages/{messageId}",
+        "path": "/users/{userId}/messageThreads/{threadId}",
+        "definition": {
+          "entityName": "MessageThread",
+          "schema": {
+            "$ref": "#/backend/entities/MessageThread"
+          },
+          "description": "Stores conversation threads. Nested under a user for security.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "threadId",
+              "description": "The ID of the message thread."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/messageThreads/{threadId}/messages/{messageId}",
         "definition": {
           "entityName": "Message",
           "schema": {
@@ -261,7 +297,7 @@
               "description": "The unique ID of the user."
             },
             {
-              "name": "chatId",
+              "name": "threadId",
               "description": "The unique ID of the chat."
             },
             {

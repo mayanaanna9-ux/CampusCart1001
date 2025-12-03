@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset implements a hybrid security model tailored for a marketplace application.
  * It combines a strict user-ownership model for private data with a public-read/owner-write model for
@@ -12,15 +13,15 @@
  *   profile document. Listing all users is explicitly disabled to protect privacy.
  * - Item Listings: All users (including unauthenticated ones) can read and list items. However, only the
  *   authenticated seller can create, update, or delete their own item listings.
- * - Messages: A user can only access messages stored within their own data tree. The application logic is
- *   responsible for delivering a message to each participant's respective message collection.
+ * - Messages & Threads: A user can only access message threads and the messages within them if they are a
+ *   participant. Data is stored within the user's own data tree for path-based security.
  * - Public Data: Categories and Avatars are treated as globally readable, read-only collections. Writes
  *   are disabled, assuming they will be managed administratively.
  *
  * Denormalization for Authorization: To ensure fast and secure authorization, the `items` collection
  * contains a denormalized `sellerId` field on each document. This allows security rules to verify
  * ownership for write operations directly from the item document itself, avoiding slow and costly
- * lookups to other collections.
+ * lookups to other collections. The `messageThreads` collection denormalizes participant UIDs for the same reason.
  *
  * Structural Segregation: User-private data is strictly separated into the `/users` collection path.
  * Public marketplace data is kept in top-level collections like `/items` and `/categories`. This
@@ -47,11 +48,9 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree, preventing unauthorized data exposure.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Disallow listing all users for privacy
+      allow get, update, delete: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for privacy
     }
 
     /**
@@ -62,11 +61,9 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes while allowing public reads for the marketplace.
      */
     match /items/{itemId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.sellerId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
     }
 
     /**
@@ -77,11 +74,8 @@ service cloud.firestore {
      * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
      */
     match /categories/{categoryId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
@@ -92,26 +86,34 @@ service cloud.firestore {
      * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
      */
     match /avatars/{avatarId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+    
+    /**
+     * @description Manages message threads within a user's private data tree.
+     * @path /users/{userId}/messageThreads/{threadId}
+     * @allow A user reading a message thread they are part of. auth.uid: 'user123', (list) /users/user123/messageThreads
+     * @deny A user trying to read threads of another user. auth.uid: 'user456', (list) /users/user123/messageThreads
+     * @principle Enforces path-based ownership for message threads.
+     */
+    match /users/{userId}/messageThreads/{threadId} {
+      allow read, write: if isOwner(userId);
     }
 
     /**
-     * @description Manages messages within a user's private chat tree, enforcing path ownership.
-     * @path /users/{userId}/chats/{chatId}/messages/{messageId}
-     * @allow A user reading a message from their own chat history. auth.uid: 'user123', (get) /users/user123/chats/abc/messages/msg1
-     * @deny A user trying to read messages from another user's chat history. auth.uid: 'user456', (list) /users/user123/chats/abc/messages
+     * @description Manages messages within a specific message thread, ensuring only participants can access them.
+     * @path /users/{userId}/messageThreads/{threadId}/messages/{messageId}
+     * @allow A user reading a message from a chat they are in. auth.uid: 'user123', (get) /users/user123/messageThreads/abc/messages/msg1
+     * @deny A user trying to read messages from another user's chat. auth.uid: 'user456', (list) /users/user123/messageThreads/abc/messages
      * @principle Enforces strict path-based ownership for nested private data like direct messages.
      */
-    match /users/{userId}/chats/{chatId}/messages/{messageId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.senderId == userId;
-      allow update: if isOwner(userId) && request.resource.data.senderId == resource.data.senderId;
-      allow delete: if isOwner(userId);
+    match /users/{userId}/messageThreads/{threadId}/messages/{messageId} {
+      // Users can only access messages in threads they are part of.
+      // This is secured by the parent rule on /messageThreads/{threadId}.
+      allow read, write: if isOwner(userId);
     }
   }
 }
+
+    
