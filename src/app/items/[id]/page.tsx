@@ -141,7 +141,7 @@ export default function ItemPage({ params }: ItemPageProps) {
           <div>
             <div className="flex gap-2 mb-2">
                 {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
-                <Badge variant="outline">{conditionMap[item.condition]}</Badge>
+                {item.condition && <Badge variant="outline">{conditionMap[item.condition]}</Badge>}
             </div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold">{item.name}</h1>
             <p className="text-4xl font-bold text-primary mt-4">${item.price.toFixed(2)}</p>

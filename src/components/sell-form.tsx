@@ -37,7 +37,6 @@ const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
-  condition: z.enum(['new', 'used-like-new', 'used-good', 'used-fair']),
   imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
 });
 
@@ -150,7 +149,6 @@ export function SellForm() {
                 name: values.name,
                 description: values.description,
                 price: values.price,
-                condition: values.condition,
                 sellerId: user.uid,
                 imageUrls: uploadedImageUrls,
                 postedAt: serverTimestamp(),
@@ -290,29 +288,6 @@ export function SellForm() {
                     <FormControl>
                       <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isFormDisabled} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="condition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Condition</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select the item's condition" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="used-like-new">Used - Like New</SelectItem>
-                          <SelectItem value="used-good">Used - Good</SelectItem>
-                          <SelectItem value="used-fair">Used - Fair</SelectItem>
-                        </SelectContent>
-                      </Select>
                     <FormMessage />
                   </FormItem>
                 )}
