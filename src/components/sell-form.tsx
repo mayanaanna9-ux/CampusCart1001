@@ -27,6 +27,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
@@ -106,7 +108,7 @@ export function SellForm() {
             }
             
             const itemsCollection = collection(firestore, 'items');
-            await addDoc(itemsCollection, {
+            const itemData = {
                 name: values.name,
                 description: values.description,
                 category: values.category,
@@ -115,12 +117,24 @@ export function SellForm() {
                 sellerId: user.uid,
                 imageUrls: uploadedImageUrls,
                 postedAt: serverTimestamp(),
-            });
+            };
+            
+            addDoc(itemsCollection, itemData)
+              .then(() => {
+                toast({
+                  title: "Item Posted!",
+                  description: `${values.name} is now available for sale.`,
+                });
+              })
+              .catch(error => {
+                const permissionError = new FirestorePermissionError({
+                  path: itemsCollection.path,
+                  operation: 'create',
+                  requestResourceData: { ...itemData, postedAt: new Date().toISOString() },
+                });
+                errorEmitter.emit('permission-error', permissionError);
+              });
 
-            toast({
-                title: "Item Posted!",
-                description: `${values.name} is now available for sale.`,
-            });
         } catch(error: any) {
             console.error("Error posting item:", error);
             toast({
@@ -128,8 +142,6 @@ export function SellForm() {
                 title: 'Upload Failed',
                 description: error.message || 'There was an error posting your item.',
             });
-        } finally {
-            // This component will be unmounted, so no need to set isSubmitting to false
         }
     };
     
