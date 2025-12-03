@@ -30,6 +30,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
@@ -121,67 +123,61 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
-    
-    try {
-        const uploadedImageUrls: string[] = [];
+    router.push('/home'); // Immediately redirect
 
-        // Step 1: Upload images to Firebase Storage first
-        for (const image of values.imageUrls) {
-            const response = await fetch(image);
-            const blob = await response.blob();
-            const dataUrl = await new Promise<string>(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
+    // The rest of the function runs in the background
+    (async () => {
+        try {
+            const uploadedImageUrls: string[] = [];
+            
+            // Step 1: Upload images to Firebase Storage
+            for (const image of values.imageUrls) {
+                const response = await fetch(image);
+                const blob = await response.blob();
+                const dataUrl = await new Promise<string>(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+
+                const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
+                const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+                const downloadUrl = await getDownloadURL(uploadResult.ref);
+                uploadedImageUrls.push(downloadUrl);
+            }
+            
+            // Step 2: Add item document to Firestore non-blockingly
+            const itemsCollection = collection(firestore, 'items');
+            const itemData = {
+                name: values.name,
+                description: values.description,
+                price: values.price,
+                sellerId: user.uid,
+                imageUrls: uploadedImageUrls,
+                postedAt: serverTimestamp(),
+            };
+            
+            // This function is non-blocking and handles its own errors
+            addDocumentNonBlocking(itemsCollection, itemData);
+
+            toast({
+              title: "Item Posted!",
+              description: `${values.name} is now available for sale.`,
             });
 
-            const storageRef = ref(storage, `items/${user.uid}/${Date.now()}_${Math.random()}`);
-            const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-            const downloadUrl = await getDownloadURL(uploadResult.ref);
-            uploadedImageUrls.push(downloadUrl);
-        }
-        
-        // Step 2: Add item document to Firestore with the uploaded URLs
-        const itemsCollection = collection(firestore, 'items');
-        const itemData = {
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            sellerId: user.uid,
-            imageUrls: uploadedImageUrls, // Use the final URLs
-            postedAt: serverTimestamp(),
-        };
-        
-        await addDoc(itemsCollection, itemData);
-
-        toast({
-          title: "Item Posted!",
-          description: `${values.name} is now available for sale.`,
-        });
-
-        // Step 3: Redirect only after successful creation
-        router.push('/home');
-
-    } catch(error: any) {
-        console.error("Error posting item:", error);
-        
-        if (error.code === 'permission-denied') {
-             const permissionError = new FirestorePermissionError({
-                path: 'items',
-                operation: 'create',
-                requestResourceData: { ...values, sellerId: user.uid, postedAt: new Date().toISOString() },
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
+        } catch(error: any) {
+            console.error("Error posting item in background:", error);
+            // Since we've already redirected, we show a toast for failure.
             toast({
                 variant: 'destructive',
                 title: 'Upload Failed',
-                description: error.message || 'There was an error posting your item.',
+                description: error.message || 'There was an error posting your item in the background.',
             });
+             // No need to emit a permission error here as addDocumentNonBlocking already handles it
+        } finally {
+            // No need to set isSubmitting to false as the component is unmounted
         }
-    } finally {
-        setIsSubmitting(false);
-    }
+    })();
   }
   
   if (userLoading) {
@@ -305,3 +301,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
