@@ -3,12 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, PlusSquare, Search, User } from 'lucide-react';
+import { Home, MessageSquare, Plus, Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/messages', icon: MessageSquare, label: 'Messages' },
-  { href: '/sell', icon: PlusSquare, label: 'Sell' },
+  { href: '/sell', icon: Plus, label: 'Sell' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
 
@@ -20,6 +20,18 @@ export function BottomNav() {
       <div className="mx-auto grid h-16 max-w-lg grid-cols-3 items-center px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+
+          if (item.href === '/sell') {
+            return (
+              <Link key={item.href} href={item.href} className="flex justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg">
+                  <item.icon className="h-6 w-6" />
+                  <span className="sr-only">{item.label}</span>
+                </div>
+              </Link>
+            )
+          }
+
           return (
             <Link
               key={item.href}
