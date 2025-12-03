@@ -46,11 +46,12 @@ export default function ChatPage({ params }: { params: { threadId: string } }) {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const { threadId } = params;
 
   const threadDocRef = useMemoFirebase(() => {
-    if (!firestore || !user || !params.threadId) return null;
-    return doc(firestore, 'users', user.uid, 'messageThreads', params.threadId);
-  }, [firestore, user, params.threadId]);
+    if (!firestore || !user || !threadId) return null;
+    return doc(firestore, 'users', user.uid, 'messageThreads', threadId);
+  }, [firestore, user, threadId]);
 
   const { data: thread, isLoading: threadLoading } = useDoc<MessageThread>(threadDocRef);
   
@@ -81,5 +82,3 @@ export default function ChatPage({ params }: { params: { threadId: string } }) {
     </div>
   );
 }
-
-    
