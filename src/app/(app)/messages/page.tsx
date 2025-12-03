@@ -9,8 +9,10 @@ import { useFirestore } from '@/firebase';
 import type { MessageThread } from '@/lib/types';
 import { ConversationList } from '@/components/messages/conversation-list';
 import { ChatView } from '@/components/messages/chat-view';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function MessagesSkeleton() {
   return (
@@ -69,13 +71,19 @@ export default function MessagesPage() {
 
   return (
     <div className="h-full border-t md:grid md:grid-cols-3">
-      <div className="flex flex-col border-r h-full">
+      <div className="relative flex flex-col border-r h-full">
         <ConversationList 
           threads={threads || []} 
           currentUser={user} 
           onSelectThread={setSelectedThread}
           selectedThreadId={selectedThread?.id || null}
         />
+        <Button asChild className="absolute bottom-4 right-4 h-14 w-14 rounded-full shadow-lg" variant="destructive">
+          <Link href="/messages/ai-assistant">
+            <Plus className="h-8 w-8" />
+            <span className="sr-only">New AI Chat</span>
+          </Link>
+        </Button>
       </div>
       <div className="hidden md:col-span-2 md:flex md:flex-col">
         {selectedThread && user ? (
@@ -90,5 +98,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-    
