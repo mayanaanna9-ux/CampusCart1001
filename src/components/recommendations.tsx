@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import { recommendRelevantItems } from '@/ai/flows/recommend-relevant-items';
 import { ItemCard } from './item-card';
 import { Skeleton } from './ui/skeleton';
 
-export function Recommendations({ allItems, allUsers, userHistoryData }: { allItems: Item[], allUsers: User[], userHistoryData: any }) {
+export function Recommendations({ allItems, userHistoryData }: { allItems: Item[], userHistoryData: any }) {
   const [recommendedItems, setRecommendedItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,7 +15,7 @@ export function Recommendations({ allItems, allUsers, userHistoryData }: { allIt
     const getRecommendations = async () => {
       setLoading(true);
       try {
-        const availableItemsStr = JSON.stringify(allItems.map(i => ({ id: i.id, name: i.name, description: i.description, category: i.category })));
+        const availableItemsStr = JSON.stringify(allItems.map(i => ({ id: i.id, name: i.name, description: i.description })));
         const userHistoryStr = JSON.stringify(userHistoryData);
         
         const result = await recommendRelevantItems({
@@ -45,7 +46,11 @@ export function Recommendations({ allItems, allUsers, userHistoryData }: { allIt
       }
     };
 
-    getRecommendations();
+    if (allItems.length > 0) {
+      getRecommendations();
+    } else {
+      setLoading(false);
+    }
   }, [allItems, userHistoryData]);
 
   if (loading) {
@@ -72,9 +77,7 @@ export function Recommendations({ allItems, allUsers, userHistoryData }: { allIt
   return (
     <div className="grid grid-cols-2 gap-4">
       {recommendedItems.map(item => {
-        const seller = allUsers.find(u => u.id === item.sellerId);
-        if (!seller) return null;
-        return <ItemCard key={item.id} item={item} seller={seller} />;
+        return <ItemCard key={item.id} item={item} />;
       })}
     </div>
   );

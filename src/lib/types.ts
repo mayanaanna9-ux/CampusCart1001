@@ -21,7 +21,7 @@ export type Item = {
   name: string;
   description: string;
   price: number;
-  category: 'gadgets' | 'books' | 'clothes' | 'food' | 'other';
+  category?: 'gadgets' | 'books' | 'clothes' | 'food' | 'other';
   condition: 'new' | 'used-like-new' | 'used-good' | 'used-fair';
   sellerId: string;
   imageUrls: string[];

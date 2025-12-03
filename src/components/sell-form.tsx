@@ -36,7 +36,6 @@ import { cn } from '@/lib/utils';
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
-  category: z.enum(['gadgets', 'books', 'clothes', 'food', 'other']),
   price: z.coerce.number().positive('Price must be a positive number.'),
   condition: z.enum(['new', 'used-like-new', 'used-good', 'used-fair']),
   imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
@@ -150,7 +149,6 @@ export function SellForm() {
             const itemData = {
                 name: values.name,
                 description: values.description,
-                category: values.category,
                 price: values.price,
                 condition: values.condition,
                 sellerId: user.uid,
@@ -285,31 +283,6 @@ export function SellForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <FormField
                 control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="gadgets">Gadgets</SelectItem>
-                        <SelectItem value="books">Books</SelectItem>
-                        <SelectItem value="clothes">Clothes</SelectItem>
-                        <SelectItem value="food">Food</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="price"
                 render={({ field }) => (
                   <FormItem>
@@ -321,32 +294,31 @@ export function SellForm() {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="condition"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Condition</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select the item's condition" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="used-like-new">Used - Like New</SelectItem>
+                          <SelectItem value="used-good">Used - Good</SelectItem>
+                          <SelectItem value="used-fair">Used - Fair</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             
-            <FormField
-              control={form.control}
-              name="condition"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Condition</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select the item's condition" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="used-like-new">Used - Like New</SelectItem>
-                        <SelectItem value="used-good">Used - Good</SelectItem>
-                        <SelectItem value="used-fair">Used - Fair</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <Button type="submit" size="lg" className="w-full font-bold" disabled={isFormDisabled}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Posting...' : 'Sell'}
@@ -357,5 +329,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    

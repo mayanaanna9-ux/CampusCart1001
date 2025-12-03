@@ -84,7 +84,15 @@ export default function ItemPage({ params }: ItemPageProps) {
     notFound();
   }
 
-  const images = (item.imageUrls || []).map(urlOrId => PlaceHolderImages.find(p => p.id === urlOrId || p.imageUrl === urlOrId)).filter(Boolean);
+  const images = (item.imageUrls || []).map(urlOrId => {
+    const placeholder = PlaceHolderImages.find(p => p.id === urlOrId);
+    if (placeholder) {
+      return placeholder;
+    }
+    // It's a direct URL
+    return { id: urlOrId, imageUrl: urlOrId, description: 'User uploaded image', imageHint: '' };
+  }).filter(Boolean);
+
 
   const conditionMap = {
     'new': 'New',
@@ -132,7 +140,7 @@ export default function ItemPage({ params }: ItemPageProps) {
         <div className="space-y-6">
           <div>
             <div className="flex gap-2 mb-2">
-                <Badge variant="secondary" className="capitalize">{item.category}</Badge>
+                {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
                 <Badge variant="outline">{conditionMap[item.condition]}</Badge>
             </div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold">{item.name}</h1>
