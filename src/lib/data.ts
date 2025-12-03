@@ -1,5 +1,7 @@
+
 import type { User, Item, MessageThread } from './types';
 import { PlaceHolderImages } from './placeholder-images';
+import { Timestamp } from 'firebase/firestore';
 
 const getImage = (id: string) => PlaceHolderImages.find(img => img.id === id)?.imageUrl || '';
 
@@ -19,7 +21,7 @@ export const items: Item[] = [
     category: 'gadgets',
     condition: 'used-good',
     sellerId: 'user1',
-    imageIds: ['item1_1', 'item1_2'],
+    imageUrls: ['item1_1', 'item1_2'],
     postedAt: new Date().toISOString(),
   },
   {
@@ -30,7 +32,7 @@ export const items: Item[] = [
     category: 'books',
     condition: 'used-like-new',
     sellerId: 'user2',
-    imageIds: ['item2_1'],
+    imageUrls: ['item2_1'],
     postedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -41,7 +43,7 @@ export const items: Item[] = [
     category: 'clothes',
     condition: 'used-good',
     sellerId: 'user3',
-    imageIds: ['item3_1'],
+    imageUrls: ['item3_1'],
     postedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -52,7 +54,7 @@ export const items: Item[] = [
     category: 'food',
     condition: 'new',
     sellerId: 'user4',
-    imageIds: ['item4_1'],
+    imageUrls: ['item4_1'],
     postedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
   {
@@ -63,7 +65,7 @@ export const items: Item[] = [
     category: 'gadgets',
     condition: 'used-like-new',
     sellerId: 'user1',
-    imageIds: ['item5_1'],
+    imageUrls: ['item5_1'],
     postedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
   },
   {
@@ -74,35 +76,15 @@ export const items: Item[] = [
     category: 'books',
     condition: 'used-fair',
     sellerId: 'user2',
-    imageIds: ['item6_1'],
+    imageUrls: ['item6_1'],
     postedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
   },
 ];
 
-export const messageThreads: MessageThread[] = [
-  {
-    id: 'thread1',
-    itemId: 'item1',
-    buyerId: 'user2',
-    sellerId: 'user1',
-    itemPreview: { name: 'Slightly Used MacBook Air', imageId: 'item1_1'},
-    messages: [
-      { id: 'msg1', senderId: 'user2', text: 'Hi, is this still available?', timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString() },
-      { id: 'msg2', senderId: 'user1', text: 'Yes, it is!', timestamp: new Date(Date.now() - 1000 * 60 * 19).toISOString() },
-      { id: 'msg3', senderId: 'user2', text: 'Great! Would you consider $800?', timestamp: new Date(Date.now() - 1000 * 60 * 18).toISOString() },
-    ],
-  },
-  {
-    id: 'thread2',
-    itemId: 'item3',
-    buyerId: 'user4',
-    sellerId: 'user3',
-    itemPreview: { name: 'University Branded Hoodie', imageId: 'item3_1'},
-    messages: [
-      { id: 'msg4', senderId: 'user4', text: 'Hey! Can I pick this up tomorrow?', timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
-    ],
-  },
+export const messageThreads: any[] = [
+// This data is now fetched from Firestore. Keeping the file for other data.
 ];
+
 
 // Mock user browsing history for AI recommendations
 export const userHistory = {

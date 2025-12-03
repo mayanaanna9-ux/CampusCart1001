@@ -1,90 +1,97 @@
-import { messageThreads, users } from '@/lib/data';
-import { UserAvatar } from '@/components/user-avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
+
+'use client';
+
+import { useState } from 'react';
+import { useUser } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import type { MessageThread } from '@/lib/types';
+import { ConversationList } from '@/components/messages/conversation-list';
+import { ChatView } from '@/components/messages/chat-view';
+import { MessageSquare } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function MessagesSkeleton() {
+  return (
+    <div className="h-full border-t md:grid md:grid-cols-3">
+       <div className="flex flex-col border-r">
+          <div className="p-4 border-b">
+              <h1 className="font-headline text-2xl font-bold">Messages</h1>
+              <Skeleton className="h-10 w-full mt-2" />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-3 p-4 items-start border-b">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="flex-1 overflow-hidden space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+            ))}
+          </div>
+       </div>
+       <div className="hidden md:col-span-2 md:flex md:flex-col items-center justify-center bg-muted/30">
+          <MessageSquare className="h-16 w-16 text-muted-foreground/50" />
+          <p className="mt-4 text-muted-foreground">Select a conversation to start chatting</p>
+       </div>
+    </div>
+  )
+}
+
 
 export default function MessagesPage() {
-    const currentUserId = 'user2'; // Mock current user
-    const selectedThread = messageThreads[0];
-    const otherUser = users.find(u => u.id === selectedThread.sellerId);
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
+
+  const threadsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    // This query is a bit complex. It tries to find threads where the current user is either the buyer or seller.
+    // Firestore can't do OR queries on different fields, so in a real, scalable app,
+    // you would typically have a 'participants' array field on the thread document.
+    // e.g., where('participants', 'array-contains', user.uid)
+    // For this prototype with limited data, we'll fetch where user is buyer.
+    return query(
+        collection(firestore, 'messageThreads'),
+        where('buyerId', '==', user.uid),
+        orderBy('lastMessageTimestamp', 'desc')
+    );
+  }, [user, firestore]);
+
+  const { data: threads, isLoading: threadsLoading } = useCollection<MessageThread>(threadsQuery);
+
+  const isLoading = userLoading || threadsLoading;
+
+  if (isLoading) {
+    return <MessagesSkeleton />;
+  }
 
   return (
     <div className="h-full border-t md:grid md:grid-cols-3">
-      <div className="flex flex-col border-r">
-        <div className="p-4 border-b">
-            <h1 className="font-headline text-2xl font-bold">Messages</h1>
-            <Input placeholder="Search messages..." className="mt-2" />
-        </div>
-        <div className="flex-1 overflow-y-auto">
-            {messageThreads.map(thread => {
-                const item = items.find(i => i.id === thread.itemId);
-                const otherParticipantId = thread.buyerId === currentUserId ? thread.sellerId : thread.buyerId;
-                const otherParticipant = users.find(u => u.id === otherParticipantId);
-                const lastMessage = thread.messages[thread.messages.length - 1];
-                const image = PlaceHolderImages.find(p => p.id === thread.itemPreview.imageId);
-
-                return (
-                    <div key={thread.id} className="flex gap-3 p-4 items-start cursor-pointer hover:bg-muted/50 border-b">
-                       {otherParticipant && <UserAvatar name={otherParticipant.name} avatarUrl={otherParticipant.avatarUrl} className="h-10 w-10 shrink-0" />}
-                        <div className="flex-1 overflow-hidden">
-                            <div className="flex justify-between items-center">
-                                <p className="font-bold truncate">{otherParticipant?.name}</p>
-                                <p className="text-xs text-muted-foreground">{new Date(lastMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                            </div>
-                            <p className="text-sm font-semibold truncate text-muted-foreground">{thread.itemPreview.name}</p>
-                            <p className="text-sm text-muted-foreground truncate">{lastMessage.text}</p>
-                        </div>
-                    </div>
-                )
-            })}
-        </div>
+      <div className="flex flex-col border-r h-full">
+        <ConversationList 
+          threads={threads || []} 
+          currentUser={user} 
+          onSelectThread={setSelectedThread}
+          selectedThreadId={selectedThread?.id || null}
+        />
       </div>
       <div className="hidden md:col-span-2 md:flex md:flex-col">
-        {selectedThread && otherUser && (
-            <>
-            <div className="flex items-center gap-4 p-4 border-b">
-                <UserAvatar name={otherUser.name} avatarUrl={otherUser.avatarUrl} className="h-10 w-10"/>
-                <div>
-                    <p className="font-bold">{otherUser.name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedThread.itemPreview.name}</p>
-                </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {selectedThread.messages.map(message => {
-                    const isCurrentUser = message.senderId === currentUserId;
-                    const sender = users.find(u => u.id === message.senderId);
-                    return (
-                        <div key={message.id} className={cn("flex items-end gap-3", isCurrentUser && "justify-end")}>
-                            {!isCurrentUser && sender && <UserAvatar name={sender.name} avatarUrl={sender.avatarUrl} className="h-8 w-8" />}
-                             <div className={cn("max-w-xs md:max-w-md rounded-2xl p-3", isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
-                                <p>{message.text}</p>
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-            <div className="p-4 border-t bg-background">
-                <div className="relative">
-                    <Input placeholder="Type a message..." className="pr-12 h-12"/>
-                    <Button size="icon" className="absolute top-1/2 right-2 -translate-y-1/2">
-                        <Send className="h-5 w-5" />
-                    </Button>
-                </div>
-            </div>
-            </>
+        {selectedThread && user ? (
+          <ChatView thread={selectedThread} currentUser={user} />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center bg-muted/30">
+            <MessageSquare className="h-16 w-16 text-muted-foreground/50" />
+            <p className="mt-4 text-muted-foreground">Select a conversation to start chatting</p>
+          </div>
         )}
       </div>
     </div>
   );
 }
-
-// Dummy items data needed for preview - this would be fetched from a DB in a real app
-const items = [
-    {id: 'item1', name: 'Slightly Used MacBook Air'},
-    {id: 'item3', name: 'University Branded Hoodie'}
-]

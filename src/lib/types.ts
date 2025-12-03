@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type User = {
   id: string;
   name: string;
@@ -21,7 +23,7 @@ export type Item = {
   category: 'gadgets' | 'books' | 'clothes' | 'food' | 'other';
   condition: 'new' | 'used-like-new' | 'used-good' | 'used-fair';
   sellerId: string;
-  imageIds: string[];
+  imageUrls: string[];
   postedAt: string; // ISO string
 };
 
@@ -35,11 +37,20 @@ export type MessageThread = {
     name: string;
     imageId: string;
   }
+  lastMessageText: string;
+  lastMessageTimestamp: Timestamp;
+  participants: string[]; // Array of user IDs
+  participantDetails: {
+    [key: string]: {
+      name: string;
+      avatarUrl: string;
+    }
+  }
 };
 
 export type Message = {
-  id:string;
+  id?:string;
   senderId: string;
   text: string;
-  timestamp: string; // ISO string
+  timestamp: Timestamp; // ISO string
 };
