@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, ShoppingCart, User, LogOut, UserPlus } from 'lucide-react';
+import { Bell, ShoppingCart, User, LogOut, UserPlus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
@@ -67,6 +67,12 @@ export function AppHeader() {
           <span className="font-headline text-xl font-bold">Campus Cart</span>
         </Link>
         <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/search">
+              <Search className="h-5 w-5" />
+              <span className="sr-only">Browse</span>
+            </Link>
+          </Button>
           <Button asChild variant="ghost" size="icon" className="relative">
             <Link href="/notifications">
                 {hasNotifications && (
