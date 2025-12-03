@@ -31,6 +31,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
@@ -356,5 +357,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
