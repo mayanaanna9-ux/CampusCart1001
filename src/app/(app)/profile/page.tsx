@@ -12,6 +12,7 @@ import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function ProfileSkeleton() {
   return (
@@ -78,17 +79,19 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
   const { data: userItems, isLoading: itemsLoading } = useCollection<Item>(userItemsQuery);
 
   const isLoading = userLoading || profileLoading || itemsLoading;
+  
+  useEffect(() => {
+    // If after loading, there is still no profile user ID, we can't show anything.
+    // This could happen if a guest user tries to view their own profile.
+    if (!isLoading && !profileUserId) {
+        router.push('/'); // Redirect unauthenticated users trying to see their own profile
+    }
+  }, [isLoading, profileUserId, router]);
+
 
   // This is the key change: handle loading and missing user states gracefully.
-  if (isLoading) {
+  if (isLoading || !profileUserId) {
     return <ProfileSkeleton />;
-  }
-  
-  // If after loading there is still no profile user ID, we can't show anything.
-  // This could happen if a guest user tries to view their own profile.
-  if (!profileUserId) {
-      router.push('/'); // Redirect unauthenticated users trying to see their own profile
-      return <ProfileSkeleton />; // Show skeleton while redirecting
   }
   
   // If the user profile data could not be fetched for the given ID.
