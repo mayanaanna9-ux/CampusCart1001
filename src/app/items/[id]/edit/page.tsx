@@ -169,7 +169,7 @@ export default function EditItemPage() {
     form.setValue('imageUrls', currentPreviews, { shouldValidate: true, shouldDirty: true });
   }
 
- async function onSubmit(values: z.infer<typeof formSchema>) {
+ function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage || !item) {
       toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
       return;
@@ -179,56 +179,65 @@ export default function EditItemPage() {
     
     toast({
         title: "Updating your item...",
-        description: "Please wait while we save your changes.",
+        description: "Your changes are being saved in the background.",
     });
 
-    try {
-        // Delete images that were removed
-        await Promise.all(
-            removedImageUrls.map(url => {
-                const imageRef = ref(storage, url);
-                return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
-            })
-        );
+    // Immediately navigate away
+    router.push(`/items/${item.id}`);
+
+    // Perform all storage and Firestore operations in the background (non-blocking)
+    const runAsyncOperations = async () => {
+      try {
+          // 1. Delete images that were removed from storage
+          await Promise.all(
+              removedImageUrls.map(url => {
+                  const imageRef = ref(storage, url);
+                  // Non-blocking, but we can await the collection of promises
+                  return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
+              })
+          );
+          
+          // 2. Upload new images and get their URLs
+          const finalImageUrls = await Promise.all(
+              values.imageUrls.map(async (url) => {
+                  if (url.startsWith('data:')) { // It's a new base64 image
+                      const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
+                      const uploadResult = await uploadString(storageRef, url, 'data_url');
+                      return getDownloadURL(uploadResult.ref);
+                  }
+                  return url; // It's an existing URL
+              })
+          );
+
+          // 3. Update the Firestore document with all new data
+          const itemData = {
+              ...values,
+              imageUrls: finalImageUrls,
+              updatedAt: serverTimestamp(),
+          };
         
-        // Upload new images and get their URLs
-        const uploadedImageUrls = await Promise.all(
-            values.imageUrls.map(async (url) => {
-                if (url.startsWith('data:')) { // It's a new base64 image
-                    const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, url, 'data_url');
-                    return getDownloadURL(uploadResult.ref);
-                }
-                return url; // It's an existing URL
-            })
-        );
+          const docRef = doc(firestore, 'items', item.id);
+          await updateDoc(docRef, itemData);
 
-        const itemData = {
-            ...values,
-            imageUrls: uploadedImageUrls,
-            updatedAt: serverTimestamp(), // Add an updated timestamp
-        };
-      
-      const docRef = doc(firestore, 'items', item.id);
-      await updateDoc(docRef, itemData);
+          // Optional: Show a success toast only after everything is actually done
+          toast({
+            title: "Success!",
+            description: `${values.name} has been updated.`,
+          });
 
-      toast({
-        title: "Success!",
-        description: `${values.name} has been updated.`,
-      });
+      } catch (error: any) {
+        console.error("Error updating item in background:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: error.message || 'There was an error updating your item.',
+        });
+      } finally {
+          // This would run on the server/background, so no need to set submitting state
+      }
+    };
 
-      router.push(`/items/${item.id}`);
-
-    } catch (error: any) {
-      console.error("Error updating item:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error.message || 'There was an error updating your item.',
-      });
-    } finally {
-        setIsSubmitting(false);
-    }
+    runAsyncOperations();
   }
   
   const isLoading = userLoading || itemLoading;
