@@ -43,6 +43,8 @@ const formSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
   bio: z.string().max(160, 'Bio cannot exceed 160 characters.').optional(),
   profilePictureUrl: z.string().url('Invalid URL').or(z.literal('')).optional(),
+  location: z.string().optional(),
+  contactNumber: z.string().optional(),
 });
 
 const reauthSchema = z.object({
@@ -108,6 +110,8 @@ export default function EditProfilePage() {
         username: '',
         bio: '',
         profilePictureUrl: '',
+        location: '',
+        contactNumber: '',
     },
     mode: 'onChange'
   });
@@ -127,6 +131,8 @@ export default function EditProfilePage() {
         username: userProfile?.username || '',
         bio: userProfile?.bio || '',
         profilePictureUrl: initialPhotoUrl,
+        location: userProfile?.location || '',
+        contactNumber: userProfile?.contactNumber || '',
       });
        if(newlyUploadedUrl) {
          form.setValue('profilePictureUrl', newlyUploadedUrl, { shouldDirty: true });
@@ -172,7 +178,7 @@ export default function EditProfilePage() {
     router.push('/profile');
 
     const user = auth.currentUser;
-    const { displayName, username, bio } = values;
+    const { displayName, username, bio, location, contactNumber } = values;
     let profilePictureUrl = values.profilePictureUrl || '';
 
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -183,6 +189,8 @@ export default function EditProfilePage() {
         displayName,
         username,
         bio,
+        location,
+        contactNumber,
     };
     
     const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
@@ -423,6 +431,34 @@ export default function EditProfilePage() {
                     <FormLabel>Bio</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Tell us a little about yourself" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contactNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123-456-7890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Main Campus" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

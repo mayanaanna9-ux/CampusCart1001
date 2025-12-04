@@ -31,6 +31,8 @@ const formSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
+  location: z.string().optional(),
+  contactNumber: z.string().optional(),
 });
 
 /**
@@ -40,7 +42,9 @@ export const handleUserCreation = async (
   userCredential: UserCredential, 
   firestore: Firestore,
   name?: string | null, 
-  username?: string | null
+  username?: string | null,
+  location?: string | null,
+  contactNumber?: string | null
 ) => {
   const user = userCredential.user;
   const userDocRef = doc(firestore, 'users', user.uid);
@@ -74,6 +78,8 @@ export const handleUserCreation = async (
       username: username || '',
       profilePictureUrl: user.photoURL || '',
       createdAt: serverTimestamp() as any,
+      location: location || '',
+      contactNumber: contactNumber || '',
     };
     setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
   }
@@ -94,6 +100,8 @@ export function SignUpForm() {
       username: '',
       email: '',
       password: '',
+      location: '',
+      contactNumber: '',
     },
   });
   
@@ -108,7 +116,7 @@ export function SignUpForm() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await handleUserCreation(userCredential, firestore, values.name, values.username);
+      await handleUserCreation(userCredential, firestore, values.name, values.username, values.location, values.contactNumber);
       toast({
         title: "Account created!",
         description: "Welcome to Campus Cart.",
@@ -192,6 +200,32 @@ export function SignUpForm() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="you@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="contactNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Main Campus" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

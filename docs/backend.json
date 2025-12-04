@@ -41,6 +41,14 @@
             "type": "string",
             "format": "date-time",
             "description": "The timestamp when the user profile was created."
+        },
+        "location": {
+            "type": "string",
+            "description": "The user's general location, e.g., 'Main Campus'."
+        },
+        "contactNumber": {
+            "type": "string",
+            "description": "The user's phone number for contact."
         }
       },
       "required": [

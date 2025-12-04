@@ -4,18 +4,20 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { ItemCard } from '@/components/item-card';
 import { Button } from '@/components/ui/button';
-import { Settings, Loader2, MessageSquare } from 'lucide-react';
+import { Settings, Loader2, MessageSquare, Phone, Mail, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { collection, doc, query, where, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useEffect } from 'react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 
 function ProfileSkeleton() {
@@ -60,8 +62,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const firestore = useFirestore();
   const router = useRouter();
   const routeParams = useParams();
-  const { toast } = useToast();
-  const [isCreatingThread, setIsCreatingThread] = useState(false);
 
   // This is the user whose profile we are viewing.
   const profileUserId = routeParams.userId as string;
@@ -127,80 +127,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     return null;
   }
   const joinDate = getJoinDate(userProfile.createdAt);
-  
-  const handleMessageUser = async () => {
-    if (!authUser || !userProfile || !firestore) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to message a seller.' });
-        return;
-    }
-    if (authUser.uid === userProfile.id) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You cannot message yourself.' });
-        return;
-    }
-
-    setIsCreatingThread(true);
-    // Use a consistent thread ID format based on sorted user UIDs
-    const threadId = [authUser.uid, userProfile.id].sort().join('_');
-    
-    const userThreadRef = doc(firestore, 'users', authUser.uid, 'messageThreads', threadId);
-
-    const threadDoc = await getDoc(userThreadRef);
-
-    if (threadDoc.exists()) {
-      router.push(`/messages/${threadId}`);
-      return;
-    }
-    
-    const timestamp = serverTimestamp();
-    const threadData = {
-        id: threadId,
-        itemId: null, // This is a generic chat, not tied to an item
-        participants: [authUser.uid, userProfile.id],
-        participantDetails: {
-            [authUser.uid]: {
-                name: authUser.displayName || 'User',
-                avatarUrl: authUser.photoURL,
-            },
-            [userProfile.id]: {
-                name: userProfile.displayName,
-                avatarUrl: userProfile.profilePictureUrl,
-            }
-        },
-        itemPreview: { // Use generic info for non-item chats
-            name: `Chat with ${userProfile.displayName}`,
-            imageUrl: userProfile.profilePictureUrl,
-        },
-        lastMessageText: `Started a conversation with ${userProfile.displayName}`,
-        lastMessageTimestamp: timestamp,
-    };
-
-    const batch = writeBatch(firestore);
-    
-    // Create thread for current user
-    batch.set(userThreadRef, threadData);
-    
-    // Create thread for the other user
-    const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
-    batch.set(otherUserThreadRef, threadData);
-
-    // Commit the batch and handle potential permission errors
-    batch.commit().then(() => {
-        router.push(`/messages/${threadId}`);
-    }).catch(error => {
-        // Emit the contextual error for debugging
-        const permissionError = new FirestorePermissionError({
-            path: userThreadRef.path, // The path of one of the attempted writes
-            operation: 'write',
-            requestResourceData: threadData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Also show a generic toast to the user
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Please check your permissions.' });
-    }).finally(() => {
-        setIsCreatingThread(false);
-    });
-  }
-
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
@@ -217,14 +143,46 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                     Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
             )}
-            <Button variant="outline" className="mt-4" onClick={handleMessageUser} disabled={isCreatingThread || isOwnProfile}>
-              {isCreatingThread ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <MessageSquare className="mr-2 h-4 w-4" />
-              )}
-                Message
-            </Button>
+             <div className="mt-4 flex gap-2 justify-center md:justify-start">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline">Contact Info</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                        <div className="grid gap-4">
+                            <div className="space-y-2">
+                                <h4 className="font-medium leading-none">Contact Information</h4>
+                                <p className="text-sm text-muted-foreground">
+                                Reach out to the seller.
+                                </p>
+                            </div>
+                            <div className="grid gap-2">
+                                {userProfile.email && (
+                                    <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                        <Mail className="h-4 w-4" />
+                                        <span className="text-sm font-mono">{userProfile.email}</span>
+                                    </div>
+                                )}
+                                {userProfile.contactNumber && (
+                                    <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                        <Phone className="h-4 w-4" />
+                                        <span className="text-sm">{userProfile.contactNumber}</span>
+                                    </div>
+                                )}
+                                {userProfile.location && (
+                                    <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                        <MapPin className="h-4 w-4" />
+                                        <span className="text-sm">{userProfile.location}</span>
+                                    </div>
+                                )}
+                                {!userProfile.email && !userProfile.contactNumber && !userProfile.location && (
+                                    <p className="text-sm text-muted-foreground">No contact information provided.</p>
+                                )}
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            </div>
         </div>
       </div>
 
