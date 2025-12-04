@@ -142,21 +142,19 @@ export function SellForm() {
 
     setIsSubmitting(true);
     
-    router.push('/home');
     toast({
         title: "Posting your item...",
-        description: `${values.name} will appear on the feed shortly.`,
+        description: "Please wait while we upload your images.",
     });
 
     try {
-      // Step 1: Create the document with text data and an empty imageUrls array to get an ID.
       const itemData = {
         name: values.name,
         description: values.description,
         price: values.price,
         condition: values.condition,
         sellerId: user.uid,
-        imageUrls: [], // Start with an empty array
+        imageUrls: [], 
         postedAt: serverTimestamp(),
         contactNumber: values.contactNumber || '',
         location: values.location || '',
@@ -167,7 +165,6 @@ export function SellForm() {
       const itemsCollection = collection(firestore, 'items');
       const docRef = await addDoc(itemsCollection, itemData);
 
-      // Step 2: Upload images to Firebase Storage using the new document ID.
       const uploadedImageUrls = await Promise.all(
         values.imageUrls.map(async (localUrl) => {
           const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
@@ -176,8 +173,14 @@ export function SellForm() {
         })
       );
       
-      // Step 3: Update the document with the final, permanent URLs.
       await updateDoc(docRef, { imageUrls: uploadedImageUrls });
+
+      toast({
+        title: "Success!",
+        description: `${values.name} has been posted.`,
+      });
+
+      router.push('/home');
 
     } catch (error: any) {
       console.error("Error posting item:", error);
@@ -186,8 +189,7 @@ export function SellForm() {
         title: 'Upload Failed',
         description: error.message || 'There was an error posting your item.',
       });
-      setIsSubmitting(false); // Only re-enable form on failure
-      router.back(); // Go back to the sell form if something fails
+      setIsSubmitting(false); 
     }
   }
   
@@ -382,3 +384,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
