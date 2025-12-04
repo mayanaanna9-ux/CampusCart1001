@@ -117,12 +117,12 @@ export default function OwnProfilePage() {
         <div className="flex-1 text-center md:text-left">
             <h1 className="font-headline text-3xl font-bold">{displayUser.name}</h1>
             {userProfile.username && <p className="text-lg text-muted-foreground">@{userProfile.username}</p>}
-            {userProfile.bio && <p className="mt-2 text-foreground max-w-prose">{userProfile.bio}</p>}
             {joinDate && (
                 <p className="text-sm text-muted-foreground mt-2">
                     Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
             )}
+            {userProfile.bio && <p className="mt-2 text-foreground max-w-prose">{userProfile.bio}</p>}
             <Button variant="outline" asChild className="mt-4">
                 <Link href="/profile/edit">
                 <Settings className="mr-2 h-4 w-4" /> Edit Profile
