@@ -51,10 +51,8 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
   
   const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
 
-  const rawImageUrl = item.imageUrls?.[0];
-  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl);
-  const displayUrl = placeholder?.imageUrl || rawImageUrl;
-  const imageHint = placeholder?.imageHint;
+  const displayUrl = item.imageUrls?.[0] || '';
+  const imageHint = 'product image';
   
   let timeAgo = '';
   if (item.postedAt) {
