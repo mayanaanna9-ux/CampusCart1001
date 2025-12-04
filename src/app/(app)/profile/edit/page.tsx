@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -156,7 +157,7 @@ export default function EditProfilePage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
-        setNewlyUploadedUrl(dataUrl); // This will trigger the useEffect to reset, but we re-apply it.
+        setNewlyUploadedUrl(dataUrl); 
       };
       reader.readAsDataURL(file);
     }
@@ -172,11 +173,10 @@ export default function EditProfilePage() {
 
     const user = auth.currentUser;
     const { displayName, username, bio } = values;
-    let profilePictureUrl = values.profilePictureUrl || ''; // Ensure it's not undefined
+    let profilePictureUrl = values.profilePictureUrl || '';
 
     const userDocRef = doc(firestore, 'users', user.uid);
     
-    // Prepare profile data, always including the user ID and email for creation rules.
     const profileData: Partial<UserProfile> = {
         id: user.uid,
         email: user.email,
@@ -188,20 +188,18 @@ export default function EditProfilePage() {
     const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
 
     try {
-        if (isNewImageUpload) {
-            // It's a new local upload. Update text data and local state first.
-            profileData.profilePictureUrl = newlyUploadedUrl; // Optimistically use the local URL
-            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
-            if (displayName !== user.displayName) {
-                updateProfile(user, { displayName });
-            }
+        if (displayName !== user.displayName) {
+            await updateProfile(user, { displayName });
+        }
 
-            // Start upload in background. On completion, update both auth and firestore URLs.
+        if (isNewImageUpload) {
+            profileData.profilePictureUrl = newlyUploadedUrl;
+            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+
             const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
             uploadString(storageRef, newlyUploadedUrl, 'data_url')
                 .then(snapshot => getDownloadURL(snapshot.ref))
                 .then(downloadURL => {
-                    // Update both Auth and Firestore with the permanent URL
                     if (auth.currentUser) {
                          updateProfile(auth.currentUser, { photoURL: downloadURL });
                          setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
@@ -213,15 +211,13 @@ export default function EditProfilePage() {
                 });
 
         } else {
-            // It's a static avatar URL or no change. Update everything.
-            // If newlyUploadedUrl is null, it means we selected an avatar or did not change the image
             profilePictureUrl = form.getValues('profilePictureUrl') || '';
             profileData.profilePictureUrl = profilePictureUrl;
             
             setDocumentNonBlocking(userDocRef, profileData, { merge: true });
             
-            if (displayName !== user.displayName || profilePictureUrl !== user.photoURL) {
-                updateProfile(user, { displayName, photoURL: profilePictureUrl });
+            if (profilePictureUrl !== user.photoURL) {
+                await updateProfile(user, { photoURL: profilePictureUrl });
             }
         }
     } catch (error: any) {
@@ -242,15 +238,11 @@ export default function EditProfilePage() {
     const user = auth.currentUser;
     
     try {
-        // Must delete the user first. Security rules prevent doc deletion after auth is gone.
         await deleteUser(user);
         toast({
           title: 'Account Deletion Initiated',
           description: 'Your account is being deleted. This may take a moment.',
         });
-        // Now that user is deleted, their own doc can be deleted if rules allow.
-        // Or if rules dont allow it, it will be orphaned but user can't log in.
-        // We will now attempt to delete the user's document.
         const userDocRef = doc(firestore, 'users', user.uid);
         deleteDoc(userDocRef).then(() => {
              toast({
@@ -259,7 +251,6 @@ export default function EditProfilePage() {
             });
             router.push('/');
         }).catch(error => {
-             // This might happen if the rules don't allow deletion after auth user is gone
              console.error("Firestore document deletion failed, it may be orphaned:", error);
              toast({
                 title: 'Account Data Cleanup Failed',

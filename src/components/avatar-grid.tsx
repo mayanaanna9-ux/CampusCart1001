@@ -66,7 +66,6 @@ export function AvatarGrid() {
     const user = auth.currentUser;
     const isNewImageUpload = selectedAvatarUrl.startsWith('data:');
 
-    // 1. Always include the ID when creating the profile document in Firestore
     const userProfileData = {
         id: user.uid,
         email: user.email,
@@ -75,11 +74,8 @@ export function AvatarGrid() {
     };
     const userDocRef = doc(firestore, 'users', user.uid);
     
-    // 2. Optimistically set the document in Firestore with the temporary (or static) URL.
-    // This will create the document if it doesn't exist.
     setDocumentNonBlocking(userDocRef, userProfileData, { merge: true });
 
-    // 3. If it's a static avatar URL, just update the Auth profile and we are done.
     if (!isNewImageUpload) {
         updateProfile(user, { photoURL: selectedAvatarUrl }).catch(error => {
              toast({
@@ -88,10 +84,9 @@ export function AvatarGrid() {
                 description: error.message || 'Could not update profile picture.',
             });
         });
-        return; // Exit
+        return;
     }
 
-    // 4. If it's a new image upload, handle the upload in the background.
     if (isNewImageUpload && storage) {
         setIsUploading(true);
         const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
@@ -99,10 +94,9 @@ export function AvatarGrid() {
         uploadString(storageRef, selectedAvatarUrl, 'data_url')
           .then(uploadTask => getDownloadURL(uploadTask.ref))
           .then(downloadURL => {
-              // Once uploaded, update both Auth and Firestore with the permanent URL
               if (auth.currentUser) {
+                  // Only update Auth profile after getting the final storage URL
                   updateProfile(auth.currentUser, { photoURL: downloadURL });
-                  // We only need to update the picture URL field now.
                   setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
               }
           })
@@ -180,5 +174,3 @@ export function AvatarGrid() {
     </div>
   );
 }
-
-    
