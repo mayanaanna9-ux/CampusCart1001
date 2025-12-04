@@ -22,6 +22,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type ItemPageProps = {
   params: { id: string };
@@ -122,52 +124,59 @@ export default function ItemPage({ params }: ItemPageProps) {
     
     const userThreadRef = doc(firestore, 'users', currentUser.uid, 'messageThreads', threadId);
 
-    try {
-        const threadDoc = await getDoc(userThreadRef);
-        if (!threadDoc.exists()) {
-             const batch = writeBatch(firestore);
-             const timestamp = serverTimestamp();
-             
-             const threadData = {
-                id: threadId,
-                itemId: item.id,
-                participants: [currentUser.uid, seller.id],
-                participantDetails: {
-                    [currentUser.uid]: {
-                        name: currentUser.displayName,
-                        avatarUrl: currentUser.photoURL,
-                    },
-                    [seller.id]: {
-                        name: seller.displayName,
-                        avatarUrl: seller.profilePictureUrl,
-                    }
-                },
-                itemPreview: {
-                    name: item.name,
-                    imageUrl: item.imageUrls[0],
-                },
-                lastMessageText: 'Started a new conversation!',
-                lastMessageTimestamp: timestamp,
-             }
-
-            // Create thread for current user
-            batch.set(userThreadRef, threadData);
-            
-            // Create thread for seller
-            const sellerThreadRef = doc(firestore, 'users', seller.id, 'messageThreads', threadId);
-            batch.set(sellerThreadRef, threadData);
-
-            await batch.commit();
-        }
-        
-        router.push(`/messages/${threadId}`);
-
-    } catch (error) {
-        console.error("Error creating chat thread:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation.' });
-    } finally {
-        setIsCreatingThread(false);
+    
+    const threadDoc = await getDoc(userThreadRef);
+    if (threadDoc.exists()) {
+      router.push(`/messages/${threadId}`);
+      return;
     }
+    
+    const batch = writeBatch(firestore);
+    const timestamp = serverTimestamp();
+    
+    const threadData = {
+      id: threadId,
+      itemId: item.id,
+      participants: [currentUser.uid, seller.id],
+      participantDetails: {
+          [currentUser.uid]: {
+              name: currentUser.displayName,
+              avatarUrl: currentUser.photoURL,
+          },
+          [seller.id]: {
+              name: seller.displayName,
+              avatarUrl: seller.profilePictureUrl,
+          }
+      },
+      itemPreview: {
+          name: item.name,
+          imageUrl: item.imageUrls[0],
+      },
+      lastMessageText: 'Started a new conversation!',
+      lastMessageTimestamp: timestamp,
+    }
+
+    // Create thread for current user
+    batch.set(userThreadRef, threadData);
+    
+    // Create thread for seller
+    const sellerThreadRef = doc(firestore, 'users', seller.id, 'messageThreads', threadId);
+    batch.set(sellerThreadRef, threadData);
+
+    batch.commit().then(() => {
+        router.push(`/messages/${threadId}`);
+    }).catch(error => {
+        console.error("Error creating chat thread:", error);
+        const permissionError = new FirestorePermissionError({
+          path: userThreadRef.path, // The path of one of the attempted writes
+          operation: 'write',
+          requestResourceData: threadData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Please check permissions.' });
+    }).finally(() => {
+        setIsCreatingThread(false);
+    });
   }
 
   const images = (item.imageUrls || []).map(url => ({ imageUrl: url, imageHint: 'product image' }));
