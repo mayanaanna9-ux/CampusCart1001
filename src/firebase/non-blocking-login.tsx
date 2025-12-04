@@ -5,9 +5,6 @@ import {
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  UserCredential,
 } from 'firebase/auth';
 
 /** Initiate anonymous sign-in (non-blocking). */
@@ -29,16 +26,4 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
   signInWithEmailAndPassword(authInstance, email, password).catch(error => {
     console.error("Email/password sign-in failed", error);
   });
-}
-
-/** Initiate Google Sign-In via Popup (non-blocking with callbacks). */
-export function initiateGoogleSignIn(
-  authInstance: Auth,
-  onSuccess: (userCredential: UserCredential) => void,
-  onError: (error: any) => void
-): void {
-  const provider = new GoogleAuthProvider();
-  signInWithPopup(authInstance, provider)
-    .then(onSuccess)
-    .catch(onError);
 }
