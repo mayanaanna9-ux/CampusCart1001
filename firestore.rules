@@ -100,7 +100,8 @@ service cloud.firestore {
      * @principle Enforces path-based ownership for message threads.
      */
     match /users/{userId}/messageThreads/{threadId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isSignedIn() && isOwner(userId) && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
     }
 
     /**
