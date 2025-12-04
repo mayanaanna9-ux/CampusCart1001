@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 function ProfileSkeleton() {
@@ -120,52 +122,58 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         
         const userThreadRef = doc(firestore, 'users', authUser.uid, 'messageThreads', threadId);
 
-        try {
-            const threadDoc = await getDoc(userThreadRef);
-            if (!threadDoc.exists()) {
-                const batch = writeBatch(firestore);
-                const timestamp = serverTimestamp();
-                
-                const threadData = {
-                    id: threadId,
-                    itemId: null, // No specific item
-                    participants: [authUser.uid, userProfile.id],
-                    participantDetails: {
-                        [authUser.uid]: {
-                            name: authUser.displayName,
-                            avatarUrl: authUser.photoURL,
-                        },
-                        [userProfile.id]: {
-                            name: userProfile.displayName,
-                            avatarUrl: userProfile.profilePictureUrl,
-                        }
-                    },
-                    itemPreview: {
-                        name: `Chat with ${userProfile.displayName}`,
-                        imageUrl: userProfile.profilePictureUrl || null,
-                    },
-                    lastMessageText: `Started a conversation with ${userProfile.displayName}`,
-                    lastMessageTimestamp: timestamp,
-                }
-
-                // Create thread for current user
-                batch.set(userThreadRef, threadData);
-                
-                // Create thread for other user
-                const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
-                batch.set(otherUserThreadRef, threadData);
-
-                await batch.commit();
-            }
+        
+        const threadDoc = await getDoc(userThreadRef);
+        if (!threadDoc.exists()) {
+            const batch = writeBatch(firestore);
+            const timestamp = serverTimestamp();
             
-            router.push(`/messages/${threadId}`);
+            const threadData = {
+                id: threadId,
+                itemId: null, // No specific item
+                participants: [authUser.uid, userProfile.id],
+                participantDetails: {
+                    [authUser.uid]: {
+                        name: authUser.displayName,
+                        avatarUrl: authUser.photoURL,
+                    },
+                    [userProfile.id]: {
+                        name: userProfile.displayName,
+                        avatarUrl: userProfile.profilePictureUrl,
+                    }
+                },
+                itemPreview: {
+                    name: `Chat with ${userProfile.displayName}`,
+                    imageUrl: userProfile.profilePictureUrl || null,
+                },
+                lastMessageText: `Started a conversation with ${userProfile.displayName}`,
+                lastMessageTimestamp: timestamp,
+            }
 
-        } catch (error) {
-            console.error("Error creating chat thread:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation.' });
-        } finally {
-            setIsCreatingThread(false);
+            // Create thread for current user
+            batch.set(userThreadRef, threadData);
+            
+            // Create thread for other user
+            const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
+            batch.set(otherUserThreadRef, threadData);
+
+            await batch.commit().then(() => {
+                router.push(`/messages/${threadId}`);
+            }).catch(error => {
+                const permissionError = new FirestorePermissionError({
+                    path: userThreadRef.path, // We can use either ref path, they are related
+                    operation: 'write',
+                    requestResourceData: threadData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+
+        } else {
+             router.push(`/messages/${threadId}`);
         }
+
+        setIsCreatingThread(false);
+
     }
 
 
@@ -241,3 +249,4 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     </div>
   );
 }
+
