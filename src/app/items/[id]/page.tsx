@@ -235,7 +235,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                 {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
                 <Badge variant="outline">{conditionDisplay}</Badge>
             </div>
-            <h1 className="font-headline text-3xl md:text-4xl font-bold">{item.name}</h1>
+            <h1 className="font-headline text-3xl md:text-4xl font-bold text-accent-foreground">{item.name}</h1>
             <p className="text-4xl font-bold text-primary mt-4">${item.price.toFixed(2)}</p>
           </div>
 
