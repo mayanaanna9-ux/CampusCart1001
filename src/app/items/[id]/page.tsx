@@ -207,7 +207,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                   <Card className="overflow-hidden">
                     <CardContent className="p-0">
                       <div className="aspect-square w-full relative">
-                        {img && (
+                        {img && img.imageUrl && (
                           <Image
                             src={img.imageUrl}
                             alt={`${item.name} image ${index + 1}`}
@@ -340,3 +340,4 @@ export default function ItemPage({ params }: ItemPageProps) {
   );
 }
 
+    
