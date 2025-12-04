@@ -110,8 +110,17 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     avatarUrl: userProfile.profilePictureUrl || '',
   };
 
-  const creationTime = (userProfile as any).creationTime; // This info won't be on the auth object for other users
-  const joinDate = creationTime ? new Date(creationTime) : null;
+  const getJoinDate = (createdAt: any) => {
+    if (!createdAt) return null;
+    if (typeof createdAt.toDate === 'function') {
+      return createdAt.toDate();
+    }
+    if (typeof createdAt === 'string') {
+      return new Date(createdAt);
+    }
+    return null;
+  }
+  const joinDate = getJoinDate(userProfile.createdAt);
   
 
   return (

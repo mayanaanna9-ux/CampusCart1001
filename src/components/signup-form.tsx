@@ -23,7 +23,7 @@ import { useAuth } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, UserCredential } from 'firebase/auth';
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 import { initiateGoogleSignIn } from '@/firebase/non-blocking-login';
@@ -70,6 +70,7 @@ export function SignUpForm() {
       displayName: displayName || '',
       username: username || '',
       profilePictureUrl: user.photoURL || '',
+      createdAt: serverTimestamp() as any,
     };
 
     const userDocRef = doc(firestore, 'users', user.uid);

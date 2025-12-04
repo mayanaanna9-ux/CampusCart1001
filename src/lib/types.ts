@@ -15,6 +15,7 @@ export type UserProfile = {
     profilePictureUrl?: string;
     avatarId?: string;
     bio?: string;
+    createdAt?: Timestamp;
 }
 
 export type Item = {

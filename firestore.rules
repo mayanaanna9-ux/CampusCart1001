@@ -50,7 +50,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn(); // Allow any signed-in user to read public profile data
       allow update, delete: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      // Ensure createdAt is a server timestamp on creation and cannot be modified on update.
+      allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.createdAt == request.time;
       allow list: if isSignedIn(); // Allow signed-in users to search for other users
     }
 
