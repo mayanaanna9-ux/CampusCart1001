@@ -130,19 +130,23 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
           </div>
         )}
         <CardContent className="p-0">
-          {displayUrl && (
-            <Link href={`/items/${item.id}`} className="block aspect-video w-full overflow-hidden relative">
-              <Image
-                  src={displayUrl}
-                  alt={item.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  data-ai-hint={imageHint}
-              />
-              <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>
-            </Link>
-          )}
+          <Link href={`/items/${item.id}`} className="block aspect-video w-full overflow-hidden relative">
+            {displayUrl ? (
+                <Image
+                    src={displayUrl}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    data-ai-hint={imageHint}
+                />
+            ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                    {/* You can place a placeholder icon here if you want */}
+                </div>
+            )}
+            {timeAgo && <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>}
+          </Link>
           <div className="p-4 space-y-2">
                   <Link href={`/items/${item.id}`}><h3 className="font-headline text-lg font-semibold truncate hover:underline">{item.name}</h3></Link>
                   <div className="flex items-center justify-between">

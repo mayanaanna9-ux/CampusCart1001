@@ -50,10 +50,8 @@ export function ItemCard({ item }: ItemCardProps) {
   
   const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
 
-  const rawImageUrl = item.imageUrls?.[0];
-  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl || p.imageUrl === rawImageUrl);
-  const displayUrl = placeholder?.imageUrl || rawImageUrl;
-  const imageHint = placeholder?.imageHint;
+  const displayUrl = item.imageUrls?.[0];
+  const imageHint = 'product image';
   
   const isOwner = currentUser && currentUser.uid === item.sellerId;
 
@@ -131,18 +129,20 @@ export function ItemCard({ item }: ItemCardProps) {
       
       <CardContent className="p-0">
         <Link href={`/items/${item.id}`} className="block">
-          {displayUrl && (
             <div className="aspect-square w-full overflow-hidden bg-muted relative">
-              <Image
-                src={displayUrl}
-                alt={item.name}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                data-ai-hint={imageHint}
-              />
+              {displayUrl ? (
+                <Image
+                    src={displayUrl}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    data-ai-hint={imageHint}
+                />
+              ) : (
+                <div className="w-full h-full bg-muted" />
+              )}
             </div>
-          )}
         </Link>
         <div className="p-3">
           <Link href={`/items/${item.id}`}>
