@@ -84,7 +84,6 @@ export function SellForm() {
   const firestore = useFirestore();
   const storage = useStorage();
   const { user, loading: userLoading } = useUser();
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -104,30 +103,30 @@ export function SellForm() {
 
   const isGuest = user?.isAnonymous;
   const isFormDisabled = isSubmitting || isGuest;
+  const watchedImageUrls = form.watch('imageUrls');
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviews = Array.from(files).map(file => {
+      const currentUrls = form.getValues('imageUrls');
+      const dataUrlPromises = Array.from(files).map(file => {
+        return new Promise<string>(resolve => {
           const reader = new FileReader();
-          return new Promise<string>(resolve => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.readAsDataURL(file);
-          });
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
       });
-      Promise.all(newPreviews).then(dataUrls => {
-        const allPreviews = [...imagePreviews, ...dataUrls];
-        setImagePreviews(allPreviews);
-        form.setValue('imageUrls', allPreviews, { shouldValidate: true });
-      });
+
+      Promise.all(dataUrlPromises).then(dataUrls => {
+         form.setValue('imageUrls', [...currentUrls, ...dataUrls], { shouldValidate: true, shouldDirty: true });
+      })
     }
   };
 
   const removeImage = (index: number) => {
-    const currentPreviews = [...imagePreviews];
-    currentPreviews.splice(index, 1);
-    setImagePreviews(currentPreviews);
-    form.setValue('imageUrls', currentPreviews, { shouldValidate: true });
+    const currentUrls = [...form.getValues('imageUrls')];
+    currentUrls.splice(index, 1);
+    form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
  async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -174,7 +173,7 @@ export function SellForm() {
         })
       );
       
-      // 3. Update the Firestore document with the final image URLs.
+      // 3. Update the Firestore document with the final image URLs and the ID.
       await updateDoc(docRef, { imageUrls: uploadedImageUrls, id: docRef.id });
 
       toast({
@@ -232,9 +231,9 @@ export function SellForm() {
                     <FormItem>
                       <FormLabel>Item Images (at least 1 required)</FormLabel>
                         <div className="mt-2 grid grid-cols-3 gap-4">
-                          {imagePreviews.map((src, index) => (
+                          {watchedImageUrls.map((src, index) => (
                             <div key={index} className="relative aspect-square">
-                              <Image src={src} alt={`Preview ${index}`} fill className="rounded-lg object-cover" />
+                              <Image src={src} alt={`Preview ${index}`} fill sizes="(max-width: 768px) 33vw, 25vw" className="rounded-lg object-cover" />
                               <Button
                                 type="button"
                                 variant="destructive"

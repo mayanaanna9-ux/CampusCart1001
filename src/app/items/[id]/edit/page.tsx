@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ImagePlus, Loader2, X, Facebook, ArrowLeft } from 'lucide-react';
 import { Label } from '@/components/ui/label';
@@ -141,7 +141,6 @@ export default function EditItemPage() {
     const files = event.target.files;
     if (files) {
       const currentUrls = form.getValues('imageUrls');
-      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
       
       // We are using data URLs to represent new files for upload
       const dataUrlPromises = Array.from(files).map(file => {
@@ -432,5 +431,3 @@ export default function EditItemPage() {
     </div>
   );
 }
-
-    
