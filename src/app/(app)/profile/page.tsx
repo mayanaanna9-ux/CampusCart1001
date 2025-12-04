@@ -52,16 +52,19 @@ function ProfileSkeleton() {
 }
 
 
-export default function ProfilePage({ params }: { params?: { userId: string } }) {
+export default function OwnProfilePage() {
   const { user: authUser, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
 
-  // If there's a userId in params, we're viewing someone else's profile.
-  // Otherwise, if a user is logged in, we view their own profile.
-  // This is the corrected logic: prioritize params.userId.
-  const profileUserId = params?.userId || authUser?.uid;
-  const isOwnProfile = !params?.userId || (authUser?.uid === params?.userId);
+  const profileUserId = authUser?.uid;
+
+  useEffect(() => {
+    // If not loading and still no authenticated user, redirect to login.
+    if (!userLoading && !authUser) {
+      router.push('/');
+    }
+  }, [userLoading, authUser, router]);
 
 
   const userDocRef = useMemoFirebase(() => {
@@ -80,15 +83,6 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
 
   const isLoading = userLoading || profileLoading || itemsLoading;
   
-  useEffect(() => {
-    // If after loading, there is still no profile user ID, we can't show anything.
-    // This could happen if a guest user tries to view their own profile.
-    if (!isLoading && !profileUserId) {
-        router.push('/'); // Redirect unauthenticated users trying to see their own profile
-    }
-  }, [isLoading, profileUserId, router]);
-
-
   // This is the key change: handle loading and missing user states gracefully.
   if (isLoading || !profileUserId) {
     return <ProfileSkeleton />;
@@ -110,7 +104,7 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
     avatarUrl: userProfile.profilePictureUrl || '',
   };
 
-  const creationTime = isOwnProfile ? authUser?.metadata.creationTime : (userProfile as any).creationTime;
+  const creationTime = authUser?.metadata.creationTime;
   const joinDate = creationTime ? new Date(creationTime) : null;
   
 
@@ -129,13 +123,11 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
                     Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
             )}
-            {isOwnProfile && (
-                <Button variant="outline" asChild className="mt-4">
-                  <Link href="/profile/edit">
-                    <Settings className="mr-2 h-4 w-4" /> Edit Profile
-                  </Link>
-                </Button>
-            )}
+            <Button variant="outline" asChild className="mt-4">
+                <Link href="/profile/edit">
+                <Settings className="mr-2 h-4 w-4" /> Edit Profile
+                </Link>
+            </Button>
         </div>
       </div>
 
@@ -153,13 +145,11 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
                 ) : (
                     <div className="col-span-full text-center py-12">
                         <p className="text-muted-foreground">
-                            {isOwnProfile ? "You haven't listed any items yet." : "This user hasn't listed any items."}
+                            You haven't listed any items yet.
                         </p>
-                        {isOwnProfile && (
-                            <Button variant="link" asChild>
-                                <Link href="/sell">Sell an item</Link>
-                            </Button>
-                        )}
+                        <Button variant="link" asChild>
+                            <Link href="/sell">Sell an item</Link>
+                        </Button>
                     </div>
                 )}
             </div>
@@ -167,7 +157,7 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
         <TabsContent value="favorites">
             <div className="text-center py-12">
                  <p className="text-muted-foreground">
-                    {isOwnProfile ? "You have no favorited items." : "This user has no favorited items."}
+                    You have no favorited items.
                 </p>
             </div>
         </TabsContent>
