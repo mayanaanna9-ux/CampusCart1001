@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useCart } from '@/context/cart-context';
 
 type ItemPageProps = {
   params: { id: string };
@@ -84,6 +85,7 @@ export default function ItemPage({ params }: ItemPageProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const routeParams = useParams();
   const id = routeParams.id as string;
+  const { addToCart } = useCart();
 
   const itemRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -111,17 +113,21 @@ export default function ItemPage({ params }: ItemPageProps) {
   }
 
   const handleAddToCart = async () => {
-    if (!currentUser || !item) {
+    if (!currentUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
         return;
     }
+    if (!item) return;
+
     setIsAddingToCart(true);
+    
+    addToCart(item);
+
     toast({
-        title: 'Adding to cart...',
+        title: 'Added to cart!',
         description: `${item.name} has been added to your cart.`
     });
-    // In a real app, you would add the item to a 'cart' subcollection in the user's document.
-    // For now, we just show a toast.
+    
     setTimeout(() => {
         setIsAddingToCart(false);
     }, 1000);
