@@ -144,54 +144,57 @@ export function SellForm() {
     
     toast({
         title: "Posting your item...",
-        description: "Please wait while we upload your images.",
+        description: "Your item is being created in the background.",
     });
 
-    try {
-      const itemData = {
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        condition: values.condition,
-        sellerId: user.uid,
-        imageUrls: [], 
-        postedAt: serverTimestamp(),
-        contactNumber: values.contactNumber || '',
-        location: values.location || '',
-        email: user.email,
-        facebookProfileUrl: values.facebookProfileUrl || '',
-      };
-      
-      const itemsCollection = collection(firestore, 'items');
-      const docRef = await addDoc(itemsCollection, itemData);
+    router.push('/home');
 
-      const uploadedImageUrls = await Promise.all(
-        values.imageUrls.map(async (localUrl) => {
-          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-          const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
-          return getDownloadURL(uploadResult.ref);
-        })
-      );
-      
-      await updateDoc(docRef, { imageUrls: uploadedImageUrls });
+    // Run the upload and update process in the background
+    const runAsyncOperations = async () => {
+      try {
+        const itemData = {
+          name: values.name,
+          description: values.description,
+          price: values.price,
+          condition: values.condition,
+          sellerId: user.uid,
+          imageUrls: [], 
+          postedAt: serverTimestamp(),
+          contactNumber: values.contactNumber || '',
+          location: values.location || '',
+          email: user.email,
+          facebookProfileUrl: values.facebookProfileUrl || '',
+        };
+        
+        const itemsCollection = collection(firestore, 'items');
+        const docRef = await addDoc(itemsCollection, itemData);
 
-      toast({
-        title: "Success!",
-        description: `${values.name} has been posted.`,
-      });
+        const uploadedImageUrls = await Promise.all(
+          values.imageUrls.map(async (localUrl) => {
+            const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+            const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+            return getDownloadURL(uploadResult.ref);
+          })
+        );
+        
+        await updateDoc(docRef, { imageUrls: uploadedImageUrls });
 
-      router.push('/home');
+        toast({
+          title: "Success!",
+          description: `${values.name} has been posted.`,
+        });
 
-    } catch (error: any) {
-      console.error("Error posting item:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Upload Failed',
-        description: error.message || 'There was an error posting your item.',
-      });
-    } finally {
-        setIsSubmitting(false);
-    }
+      } catch (error: any) {
+        console.error("Error posting item in background:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Upload Failed',
+          description: error.message || 'There was an error posting your item.',
+        });
+      }
+    };
+    
+    runAsyncOperations();
   }
   
   if (userLoading) {
@@ -386,4 +389,3 @@ export function SellForm() {
   );
 }
 
-    
