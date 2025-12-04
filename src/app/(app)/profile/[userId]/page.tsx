@@ -144,62 +144,61 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     
     const userThreadRef = doc(firestore, 'users', authUser.uid, 'messageThreads', threadId);
 
-    try {
-        const threadDoc = await getDoc(userThreadRef);
+    const threadDoc = await getDoc(userThreadRef);
 
-        // Only create the thread if it doesn't already exist
-        if (!threadDoc.exists()) {
-             const batch = writeBatch(firestore);
-             const timestamp = serverTimestamp();
-             
-             const threadData = {
-                id: threadId,
-                itemId: null, // This is a generic chat, not tied to an item
-                participants: [authUser.uid, userProfile.id],
-                participantDetails: {
-                    [authUser.uid]: {
-                        name: authUser.displayName || 'User',
-                        avatarUrl: authUser.photoURL,
-                    },
-                    [userProfile.id]: {
-                        name: userProfile.displayName,
-                        avatarUrl: userProfile.profilePictureUrl,
-                    }
-                },
-                itemPreview: { // Use generic info for non-item chats
-                    name: `Chat with ${userProfile.displayName}`,
-                    imageUrl: userProfile.profilePictureUrl,
-                },
-                lastMessageText: `Started a conversation with ${userProfile.displayName}`,
-                lastMessageTimestamp: timestamp,
-             }
+    if (threadDoc.exists()) {
+      router.push(`/messages/${threadId}`);
+      return;
+    }
+    
+    const timestamp = serverTimestamp();
+    const threadData = {
+        id: threadId,
+        itemId: null, // This is a generic chat, not tied to an item
+        participants: [authUser.uid, userProfile.id],
+        participantDetails: {
+            [authUser.uid]: {
+                name: authUser.displayName || 'User',
+                avatarUrl: authUser.photoURL,
+            },
+            [userProfile.id]: {
+                name: userProfile.displayName,
+                avatarUrl: userProfile.profilePictureUrl,
+            }
+        },
+        itemPreview: { // Use generic info for non-item chats
+            name: `Chat with ${userProfile.displayName}`,
+            imageUrl: userProfile.profilePictureUrl,
+        },
+        lastMessageText: `Started a conversation with ${userProfile.displayName}`,
+        lastMessageTimestamp: timestamp,
+    };
 
-            // Create thread for current user
-            batch.set(userThreadRef, threadData);
-            
-            // Create thread for the other user
-            const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
-            batch.set(otherUserThreadRef, threadData);
+    const batch = writeBatch(firestore);
+    
+    // Create thread for current user
+    batch.set(userThreadRef, threadData);
+    
+    // Create thread for the other user
+    const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
+    batch.set(otherUserThreadRef, threadData);
 
-            await batch.commit();
-        }
-        
-        // Navigate to the thread page (either existing or newly created)
+    // Commit the batch and handle potential permission errors
+    batch.commit().then(() => {
         router.push(`/messages/${threadId}`);
-
-    } catch (error) {
-        console.error("Error creating chat thread:", error);
-        // This is a placeholder until the proper error handler is implemented
+    }).catch(error => {
+        // Emit the contextual error for debugging
         const permissionError = new FirestorePermissionError({
-            path: userThreadRef.path, // We can use either ref path, they are related
+            path: userThreadRef.path, // The path of one of the attempted writes
             operation: 'write',
-            requestResourceData: { participants: [authUser.uid, userProfile.id] }, // Simplified data for the error
+            requestResourceData: threadData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Check permissions.' });
-    } finally {
+        // Also show a generic toast to the user
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Please check your permissions.' });
+    }).finally(() => {
         setIsCreatingThread(false);
-    }
+    });
   }
 
 
