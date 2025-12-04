@@ -17,7 +17,6 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
       try {
         if (allItems.length === 0) {
             setRecommendedItems([]);
-            setLoading(false);
             return;
         }
 
@@ -44,9 +43,11 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
         }
 
       } catch (error) {
-        console.error("AI recommendations failed, falling back to recent items:", error);
-        // Fallback to showing some recent items on error
-        setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
+        console.error("AI recommendations failed, falling back to random items:", error);
+        // Fallback to showing some random items on error
+        if (allItems.length > 0) {
+          setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
+        }
       } finally {
         setLoading(false);
       }
