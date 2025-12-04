@@ -158,7 +158,7 @@ export function SellForm() {
                 price: values.price,
                 condition: values.condition,
                 sellerId: user.uid,
-                imageUrls: [], // Placeholder, will be updated
+                imageUrls: values.imageUrls, // Placeholder with data URLs
                 postedAt: serverTimestamp(),
                 contactNumber: values.contactNumber || '',
                 location: values.location || '',
@@ -168,18 +168,22 @@ export function SellForm() {
             
             const itemsCollection = collection(firestore, 'items');
             const docRef = await addDoc(itemsCollection, itemData);
+            await updateDoc(docRef, { id: docRef.id, imageUrls: values.imageUrls });
 
             // 2. Upload images to storage and get their URLs.
             const uploadedImageUrls = await Promise.all(
                 values.imageUrls.map(async (localUrl) => {
-                const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
-                return getDownloadURL(uploadResult.ref);
+                  if (localUrl.startsWith('data:')) {
+                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                    const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+                    return getDownloadURL(uploadResult.ref);
+                  }
+                  return localUrl; // Should not happen on new post, but good practice
                 })
             );
             
-            // 3. Update the Firestore document with the final image URLs and the ID.
-            await updateDoc(docRef, { imageUrls: uploadedImageUrls, id: docRef.id });
+            // 3. Update the Firestore document with the final image URLs.
+            await updateDoc(docRef, { imageUrls: uploadedImageUrls });
 
             toast({
                 title: "Success!",
