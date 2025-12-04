@@ -13,26 +13,39 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages user profile documents, granting full access only to the owner.
-     * @path /users/{userId}
-     * @allow A user creating their own profile. auth.uid: 'user123', (create) /users/user123
-     * @deny A user trying to read another user's profile. auth.uid: 'user456', (get) /users/user123
-     * @principle Restricts access to a user's own data tree, preventing unauthorized data exposure.
+     * @description Manages user profile documents.
      */
     match /users/{userId} {
-      allow get: if isSignedIn(); // Allow any signed-in user to read public profile data
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow update, delete: if isOwner(userId);
       // Ensure createdAt is a server timestamp on creation and cannot be modified on update.
       allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.createdAt == request.time;
-      allow list: if isSignedIn(); // Allow signed-in users to search for other users
+
+      /**
+       * @description Manages message threads within a user's private data tree.
+       */
+      match /messageThreads/{threadId} {
+        // Create a thread if the authenticated user is a participant. This rule is key for batch writes.
+        allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
+
+        // Read, update, or delete a thread if the user is a participant.
+        // This is checked against the document that already exists in the database.
+        allow read, update, delete: if isSignedIn() && request.auth.uid in resource.data.participants;
+        
+        /**
+         * @description Manages messages within a specific message thread.
+         */
+        match /messages/{messageId} {
+          // Allow read and write if the user is a participant of the parent thread.
+          // This requires a 'get' call to the parent thread document.
+          allow read, write: if isSignedIn() && get(/databases/$(database)/documents/users/$(userId)/messageThreads/$(threadId)).data.participants.hasAny([request.auth.uid]);
+        }
+      }
     }
 
     /**
      * @description Manages item listings. Items are public to read, but only the seller can modify them.
-     * @path /items/{itemId}
-     * @allow Any user, signed in or not, reading an item. auth.uid: null, (get) /items/itemABC
-     * @deny A user trying to update an item they did not create. auth.uid: 'user456', (update) /items/itemABC
-     * @principle Enforces document ownership for writes while allowing public reads for the marketplace.
      */
     match /items/{itemId} {
       allow get, list: if true;
@@ -42,10 +55,6 @@ service cloud.firestore {
 
     /**
      * @description Provides public, read-only access to item categories.
-     * @path /categories/{categoryId}
-     * @allow Any user reading the 'Electronics' category. auth.uid: null, (get) /categories/electronics
-     * @deny Any user trying to create a new category. auth.uid: 'user123', (create) /categories/new-stuff
-     * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
@@ -54,43 +63,10 @@ service cloud.firestore {
 
     /**
      * @description Provides public, read-only access to pre-defined user avatars.
-     * @path /avatars/{avatarId}
-     * @allow Any user reading an avatar. auth.uid: null, (get) /avatars/avatar1
-     * @deny Any user trying to delete an avatar. auth.uid: 'user123', (delete) /avatars/avatar1
-     * @principle Secures lookup data as read-only for all clients, ensuring data integrity.
      */
     match /avatars/{avatarId} {
       allow get, list: if true;
       allow create, update, delete: if false;
-    }
-    
-    /**
-     * @description Manages message threads within a user's private data tree.
-     * @path /users/{userId}/messageThreads/{threadId}
-     * @allow A user reading a message thread they are part of. auth.uid: 'user123', (list) /users/user123/messageThreads
-     * @deny A user trying to read threads of another user. auth.uid: 'user456', (list) /users/user123/messageThreads
-     * @principle Enforces path-based ownership for message threads.
-     */
-    match /users/{userId}/messageThreads/{threadId} {
-      // Allow read/update/delete only if the user owns this subcollection AND is a participant.
-      allow read, update, delete: if isOwner(userId) && request.auth.uid in resource.data.participants;
-      
-      // Allow creation of a thread if the user making the request owns the subcollection
-      // AND is one of the participants. This is crucial for the batch write.
-      allow create: if isOwner(userId) && request.auth.uid in request.resource.data.participants;
-    }
-
-    /**
-     * @description Manages messages within a specific message thread, ensuring only participants can access them.
-     * @path /users/{userId}/messageThreads/{threadId}/messages/{messageId}
-     * @allow A user reading a message from a chat they are in. auth.uid: 'user123', (get) /users/user123/messageThreads/abc/messages/msg1
-     * @deny A user trying to read messages from another user's chat. auth.uid: 'user456', (list) /users/user123/messageThreads/abc/messages
-     * @principle Enforces strict path-based ownership for nested private data like direct messages.
-     */
-    match /users/{userId}/messageThreads/{threadId}/messages/{messageId} {
-      // Users can only access messages in threads they are part of.
-      // This is secured by checking the parent thread document.
-      allow read, write: if isSignedIn() && request.auth.uid == userId && get(/databases/$(database)/documents/users/$(userId)/messageThreads/$(threadId)).data.participants.hasAny([request.auth.uid]);
     }
   }
 }
