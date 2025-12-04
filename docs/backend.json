@@ -105,6 +105,19 @@
           "type": "string",
           "description": "Date and time when the item was posted.",
           "format": "date-time"
+        },
+        "contactNumber": {
+            "type": "string",
+            "description": "Seller's contact number for this item."
+        },
+        "location": {
+            "type": "string",
+            "description": "Pickup location for this item."
+        },
+        "email": {
+            "type": "string",
+            "description": "Seller's email for this item.",
+            "format": "email"
         }
       },
       "required": [

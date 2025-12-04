@@ -36,6 +36,8 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
   imageUrls: z.array(z.string()).min(1, 'Please upload at least one image.'),
+  contactNumber: z.string().optional(),
+  location: z.string().optional(),
 });
 
 function SellFormSkeleton() {
@@ -83,6 +85,8 @@ export function SellForm() {
       description: '',
       price: 0,
       imageUrls: [],
+      contactNumber: '',
+      location: '',
     },
     mode: 'onChange',
   });
@@ -142,6 +146,9 @@ export function SellForm() {
         sellerId: user.uid,
         imageUrls: [], // Start with an empty array
         postedAt: serverTimestamp(),
+        contactNumber: values.contactNumber || '',
+        location: values.location || '',
+        email: user.email,
       };
       
       const itemsCollection = collection(firestore, 'items');
@@ -280,6 +287,36 @@ export function SellForm() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="space-y-4">
+                <h3 className="font-medium text-sm">Contact Information (Optional)</h3>
+                <FormField
+                  control={form.control}
+                  name="contactNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123-456-7890" {...field} disabled={isFormDisabled} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Main Campus Library" {...field} disabled={isFormDisabled} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </div>
             
             <Button type="submit" size="lg" className="w-full font-bold" disabled={isFormDisabled}>

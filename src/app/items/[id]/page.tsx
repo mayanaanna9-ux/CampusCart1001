@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart } from 'lucide-react';
+import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -255,6 +255,34 @@ export default function ItemPage({ params }: ItemPageProps) {
             <h2 className="font-headline text-lg font-semibold mb-2">Description</h2>
             <p className="text-muted-foreground">{item.description}</p>
           </div>
+
+          {(item.email || item.contactNumber || item.location) && (
+            <div>
+              <h2 className="font-headline text-lg font-semibold mb-2">Contact Details</h2>
+              <Card>
+                <CardContent className="p-4 grid gap-2">
+                  {item.email && (
+                      <div className="flex items-center gap-3">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{item.email}</span>
+                      </div>
+                  )}
+                  {item.contactNumber && (
+                      <div className="flex items-center gap-3">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{item.contactNumber}</span>
+                      </div>
+                  )}
+                  {item.location && (
+                      <div className="flex items-center gap-3">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{item.location}</span>
+                      </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
           
           {seller && (
             <div>

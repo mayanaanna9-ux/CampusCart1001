@@ -30,6 +30,9 @@ export type Item = {
   sellerId: string;
   imageUrls: string[];
   postedAt: Timestamp | string; // Allow both for optimistic updates and server values
+  contactNumber?: string;
+  location?: string;
+  email?: string;
 };
 
 export type MessageThread = {
