@@ -26,6 +26,7 @@ import { useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
+import { initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -112,29 +113,27 @@ export function SignUpForm() {
     }
   }
 
-  async function onGoogleSignIn() {
+  function onGoogleSignIn() {
     if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: 'Firebase auth is not configured.',
-      });
-      return;
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh! Something went wrong.',
+          description: 'Firebase auth is not configured.',
+        });
+        return;
     }
-    try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      await handleUserCreation(userCredential);
-      toast({
-        title: "Signed in with Google!",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.message || "Could not sign in with Google.",
-      });
-    }
+    initiateGoogleSignIn(auth, (userCredential) => {
+        handleUserCreation(userCredential);
+        toast({
+            title: "Signed in with Google!",
+        });
+    }, (error) => {
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: error.message || "Could not sign in with Google.",
+        });
+    });
   }
 
   return (
