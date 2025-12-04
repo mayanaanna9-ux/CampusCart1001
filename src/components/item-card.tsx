@@ -19,17 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 
@@ -55,7 +44,8 @@ export function ItemCard({ item }: ItemCardProps) {
   
   const isOwner = currentUser && currentUser.uid === item.sellerId;
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!firestore) return;
     try {
       await deleteDoc(doc(firestore, 'items', item.id));
@@ -88,7 +78,6 @@ export function ItemCard({ item }: ItemCardProps) {
           ) : <div className="flex-1" />}
          
           {isOwner && (
-            <AlertDialog>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0">
@@ -103,27 +92,12 @@ export function ItemCard({ item }: ItemCardProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()} onClick={handleDelete}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete Post
                     </DropdownMenuItem>
-                  </AlertDialogTrigger>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your item posting.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           )}
       </CardHeader>
       
