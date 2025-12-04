@@ -15,6 +15,12 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
     const getRecommendations = async () => {
       setLoading(true);
       try {
+        if (allItems.length === 0) {
+            setRecommendedItems([]);
+            setLoading(false);
+            return;
+        }
+
         const availableItemsStr = JSON.stringify(allItems.map(i => ({ id: i.id, name: i.name, description: i.description })));
         const userHistoryStr = JSON.stringify(userHistoryData);
         
@@ -31,26 +37,23 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
         const filteredItems = allItems.filter(item => recommendedNames.includes(item.name.toLowerCase()));
         
         // If AI gives nothing, show some random items
-        if(filteredItems.length === 0) {
-            setRecommendedItems(allItems.slice(0, 2).sort(() => 0.5 - Math.random()));
+        if(filteredItems.length === 0 && allItems.length > 0) {
+            setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
         } else {
             setRecommendedItems(filteredItems);
         }
 
       } catch (error) {
-        console.error("Failed to get recommendations:", error);
+        console.error("AI recommendations failed, falling back to recent items:", error);
         // Fallback to showing some recent items on error
-        setRecommendedItems(allItems.slice(0, 2));
+        setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
       } finally {
         setLoading(false);
       }
     };
 
-    if (allItems.length > 0) {
-      getRecommendations();
-    } else {
-      setLoading(false);
-    }
+    getRecommendations();
+
   }, [allItems, userHistoryData]);
 
   if (loading) {
@@ -71,7 +74,11 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
   }
 
   if (recommendedItems.length === 0) {
-    return null;
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No recommendations available right now.</p>
+      </div>
+    );
   }
 
   return (
