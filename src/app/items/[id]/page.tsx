@@ -179,7 +179,7 @@ export default function ItemPage({ params }: ItemPageProps) {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
-      <Button asChild variant="ghost" className="mb-4 pl-0">
+      <Button asChild variant="link" className="mb-4 pl-0">
         <Link href="/home">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
