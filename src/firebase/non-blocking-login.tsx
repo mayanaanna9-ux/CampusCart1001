@@ -27,3 +27,5 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
     console.error("Email/password sign-in failed", error);
   });
 }
+
+// This file is no longer used for initiating Google Sign-In as that logic has been moved to signup-form.

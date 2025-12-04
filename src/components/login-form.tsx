@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -18,9 +19,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { useState } from 'react';
+import { handleUserCreation } from '@/components/signup-form';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -31,6 +33,7 @@ export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,16 +45,17 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) {
+    if (!auth || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Uh oh! Something went wrong.',
-        description: 'Firebase auth is not configured.',
+        description: 'Firebase is not configured.',
       });
       return;
     }
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      await handleUserCreation(userCredential, firestore);
       toast({
         title: "Logged in successfully!",
       });
@@ -74,16 +78,17 @@ export function LoginForm() {
   }
 
   async function onGuestLogin() {
-    if (!auth) {
+    if (!auth || !firestore) {
         toast({
           variant: 'destructive',
           title: 'Uh oh! Something went wrong.',
-          description: 'Firebase auth is not configured.',
+          description: 'Firebase is not configured.',
         });
         return;
       }
       try {
-        await signInAnonymously(auth);
+        const userCredential = await signInAnonymously(auth);
+        await handleUserCreation(userCredential, firestore);
         toast({
           title: "Signed in as guest!",
         });

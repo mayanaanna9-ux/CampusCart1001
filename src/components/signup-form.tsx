@@ -19,14 +19,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, UserCredential } from 'firebase/auth';
 import { useState } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, getDoc, Firestore } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
-import { initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -34,6 +32,53 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
+
+/**
+ * Handles creating or merging a user profile in Firestore after authentication.
+ */
+export const handleUserCreation = async (
+  userCredential: UserCredential, 
+  firestore: Firestore,
+  name?: string | null, 
+  username?: string | null
+) => {
+  const user = userCredential.user;
+  const userDocRef = doc(firestore, 'users', user.uid);
+
+  // For new users, their display name in Auth might be null initially.
+  const displayName = name || user.displayName || (user.isAnonymous ? 'Guest' : user.email);
+
+  // Update the Auth user profile if a new name is provided.
+  if (displayName && user.displayName !== displayName) {
+    await updateProfile(user, { displayName });
+  }
+
+  // Check if the document already exists to avoid overwriting username on login.
+  const docSnap = await getDoc(userDocRef);
+  if (docSnap.exists()) {
+    // On login, just ensure the basic info is there but don't overwrite existing fields.
+    const existingData = docSnap.data();
+    const profileData: Partial<UserProfile> = {
+      id: user.uid,
+      email: user.email,
+      displayName: displayName || existingData.displayName,
+      profilePictureUrl: user.photoURL || existingData.profilePictureUrl || '',
+    };
+    setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+  } else {
+    // On sign-up, create the full document.
+    const userProfile: UserProfile = {
+      id: user.uid,
+      email: user.email,
+      displayName: displayName || '',
+      username: username || '',
+      profilePictureUrl: user.photoURL || '',
+      createdAt: serverTimestamp() as any,
+    };
+    setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+  }
+};
+
 
 export function SignUpForm() {
   const { toast } = useToast();
@@ -52,40 +97,8 @@ export function SignUpForm() {
     },
   });
   
-  const handleUserCreation = async (userCredential: UserCredential, name?: string | null, username?: string | null) => {
-    if (!firestore) return;
-    const user = userCredential.user;
-    const displayName = name || user.displayName || user.email;
-
-    // 1. Update Auth profile if the name is different
-    if (displayName && user.displayName !== displayName) {
-      await updateProfile(user, { displayName });
-    }
-
-    // 2. Create the Firestore user profile document.
-    // CRITICAL: Always include the `id` field to satisfy security rules on creation.
-    const userProfile: UserProfile = {
-      id: user.uid,
-      email: user.email,
-      displayName: displayName || '',
-      username: username || '',
-      profilePictureUrl: user.photoURL || '',
-      createdAt: serverTimestamp() as any,
-    };
-
-    const userDocRef = doc(firestore, 'users', user.uid);
-    setDocumentNonBlocking(userDocRef, userProfile, { merge: true }); // Use merge to be safe
-
-    // 3. Navigate based on whether a profile picture exists.
-    if (!user.photoURL) {
-      router.push('/setup-profile');
-    } else {
-      router.push('/home');
-    }
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) {
+    if (!auth || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Uh oh! Something went wrong.',
@@ -95,11 +108,19 @@ export function SignUpForm() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await handleUserCreation(userCredential, values.name, values.username);
+      await handleUserCreation(userCredential, firestore, values.name, values.username);
       toast({
         title: "Account created!",
         description: "Welcome to Campus Cart.",
       });
+
+      // Navigate based on whether a profile picture exists.
+      if (!userCredential.user.photoURL) {
+        router.push('/setup-profile');
+      } else {
+        router.push('/home');
+      }
+
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         toast({
