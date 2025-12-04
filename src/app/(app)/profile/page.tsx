@@ -58,6 +58,7 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
 
   // If there's a userId in params, we're viewing someone else's profile.
   // Otherwise, if a user is logged in, we view their own profile.
+  // This is the corrected logic: prioritize params.userId.
   const profileUserId = params?.userId || authUser?.uid;
   const isOwnProfile = !params?.userId || (authUser?.uid === params?.userId);
 
@@ -171,3 +172,4 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
     </div>
   );
 }
+ 
