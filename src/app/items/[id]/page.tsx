@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2, ArrowLeft } from 'lucide-react';
+import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -34,8 +34,8 @@ function ItemPageSkeleton() {
                 <div>
                    <Skeleton className="aspect-square w-full rounded-lg" />
                 </div>
-                <div className="space-y-6">
-                    <div className="space-y-4">
+                <div className="space-y-4">
+                    <div className="space-y-3">
                         <div className="flex gap-2">
                            <Skeleton className="h-6 w-20 rounded-full" />
                            <Skeleton className="h-6 w-24 rounded-full" />
@@ -44,11 +44,11 @@ function ItemPageSkeleton() {
                         <Skeleton className="h-12 w-1/4" />
                     </div>
                      <div className="space-y-2">
-                        <Skeleton className="h-6 w-24" />
-                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-16 w-full" />
                     </div>
                      <div className="space-y-2">
-                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-5 w-32" />
                         <Card>
                             <CardContent className="p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -63,7 +63,10 @@ function ItemPageSkeleton() {
                             </CardContent>
                         </Card>
                     </div>
-                    <Skeleton className="h-12 w-full" />
+                    <div className="space-y-2 pt-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,7 +182,7 @@ export default function ItemPage({ params }: ItemPageProps) {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
-      <Button asChild variant="link" className="mb-4 pl-0">
+      <Button asChild variant="link" className="mb-4 pl-0 text-primary">
         <Link href="/home">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
@@ -229,14 +232,14 @@ export default function ItemPage({ params }: ItemPageProps) {
           </Carousel>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
             <div className="flex gap-2 mb-2">
                 {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
                 <Badge variant="outline">{conditionDisplay}</Badge>
             </div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-accent-foreground">{item.name}</h1>
-            <p className="text-4xl font-bold text-primary mt-4">${item.price.toFixed(2)}</p>
+            <p className="text-4xl font-bold text-primary mt-2">${item.price.toFixed(2)}</p>
           </div>
 
           <div>
@@ -268,13 +271,20 @@ export default function ItemPage({ params }: ItemPageProps) {
                 </Card>
             </div>
           )}
-
-          <Button size="lg" className="w-full font-bold">
-            <ShoppingCart className="mr-2 h-5 w-5" /> Buy Now
-          </Button>
+          
+          <div className="space-y-2 pt-2">
+            <Button size="lg" className="w-full font-bold">
+                <ShoppingCart className="mr-2 h-5 w-5" /> Buy Now
+            </Button>
+             <Button size="lg" className="w-full font-bold" variant="outline" disabled>
+                <Heart className="mr-2 h-5 w-5" /> Add to Cart
+            </Button>
+          </div>
 
         </div>
       </div>
     </div>
   );
 }
+
+    
