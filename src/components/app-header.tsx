@@ -57,7 +57,7 @@ export function AppHeader() {
   const displayName = isAnonymous ? 'Guest' : (userProfile?.displayName || user?.displayName || user?.email || 'User');
   const avatarUrl = userProfile?.profilePictureUrl || user?.photoURL || '';
 
-  const hasNotifications = true; // Mock data for notification dot
+  const hasNotifications = false; // Mock data for notification dot
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/80 px-4 py-3 backdrop-blur-md md:px-6">
