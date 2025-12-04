@@ -4,12 +4,34 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Item, UserProfile } from '@/lib/types';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { UserAvatar } from './user-avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
+import { MoreVertical, Trash2 } from 'lucide-react';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import React from 'react';
+
 
 type ItemCardProps = {
   item: Item;
@@ -17,6 +39,9 @@ type ItemCardProps = {
 
 export function ItemCard({ item }: ItemCardProps) {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const { toast } = useToast();
+
   const sellerRef = useMemoFirebase(() => {
     if (!firestore || !item.sellerId) return null;
     return doc(firestore, 'users', item.sellerId);
@@ -25,44 +50,94 @@ export function ItemCard({ item }: ItemCardProps) {
   const { data: seller, isLoading: sellerLoading } = useDoc<UserProfile>(sellerRef);
 
   const rawImageUrl = item.imageUrls?.[0];
-  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl);
+  const placeholder = PlaceHolderImages.find(p => p.id === rawImageUrl || p.imageUrl === rawImageUrl);
   const displayUrl = placeholder?.imageUrl || rawImageUrl;
   const imageHint = placeholder?.imageHint;
+  
+  const isOwner = currentUser && currentUser.uid === item.sellerId;
 
+  const handleDelete = async () => {
+    if (!firestore) return;
+    try {
+      await deleteDoc(doc(firestore, 'items', item.id));
+      toast({
+        title: 'Success',
+        description: 'Your item has been deleted.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not delete item. Please try again.',
+      });
+    }
+  };
 
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-lg">
+    <Card className="overflow-hidden transition-all hover:shadow-lg group">
+      <CardHeader className="flex-row items-center gap-3 p-3 justify-between">
+          {sellerLoading ? (
+            <div className="flex items-center gap-3 flex-1">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-5 flex-1" />
+            </div>
+          ) : seller ? (
+            <Link href={`/items/${item.id}`} className="flex items-center gap-3 flex-1 overflow-hidden">
+              <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-8 w-8" />
+              <p className="flex-1 truncate font-headline text-sm font-semibold">{item.name}</p>
+            </Link>
+          ) : <div className="flex-1" />}
+         
+          {isOwner && (
+            <AlertDialog>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Post
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your item posting.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+      </CardHeader>
       <Link href={`/items/${item.id}`} className="block">
         <CardContent className="p-0">
-          <div className="flex items-center gap-3 p-3">
-             {sellerLoading ? (
-                <>
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-5 flex-1" />
-                </>
-            ) : seller ? (
-                <>
-                    <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-8 w-8" />
-                    <p className="flex-1 truncate font-headline text-sm font-semibold">{item.name}</p>
-                </>
-            ) : null}
-          </div>
           {displayUrl && (
-            <div className="aspect-square w-full overflow-hidden bg-muted">
+            <div className="aspect-square w-full overflow-hidden bg-muted relative">
               <Image
                 src={displayUrl}
                 alt={item.name}
-                width={400}
-                height={400}
-                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={imageHint}
               />
+              <div className="absolute bottom-0 w-full p-3 bg-gradient-to-t from-black/60 to-transparent">
+                  <p className="text-lg font-bold text-white">${item.price.toFixed(2)}</p>
+              </div>
             </div>
           )}
         </CardContent>
-        <CardFooter className="p-3">
-          <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
-        </CardFooter>
       </Link>
     </Card>
   );
