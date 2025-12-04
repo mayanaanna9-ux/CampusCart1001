@@ -30,6 +30,7 @@ import { initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
+  username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
@@ -45,12 +46,13 @@ export function SignUpForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      username: '',
       email: '',
       password: '',
     },
   });
   
-  const handleUserCreation = async (userCredential: UserCredential, name?: string | null) => {
+  const handleUserCreation = async (userCredential: UserCredential, name?: string | null, username?: string | null) => {
     if (!firestore) return;
     const user = userCredential.user;
     const displayName = name || user.displayName || user.email;
@@ -66,6 +68,7 @@ export function SignUpForm() {
       id: user.uid,
       email: user.email,
       displayName: displayName || '',
+      username: username || '',
       profilePictureUrl: user.photoURL || '',
     };
 
@@ -91,7 +94,7 @@ export function SignUpForm() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await handleUserCreation(userCredential, values.name);
+      await handleUserCreation(userCredential, values.name, values.username);
       toast({
         title: "Account created!",
         description: "Welcome to Campus Cart.",
@@ -138,9 +141,22 @@ export function SignUpForm() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Display Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="johndoe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

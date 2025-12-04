@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,6 +39,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
+  username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
   bio: z.string().max(160, 'Bio cannot exceed 160 characters.').optional(),
   profilePictureUrl: z.string().url('Invalid URL').or(z.literal('')).optional(),
 });
@@ -104,6 +104,7 @@ export default function EditProfilePage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
         displayName: '',
+        username: '',
         bio: '',
         profilePictureUrl: '',
     },
@@ -122,6 +123,7 @@ export default function EditProfilePage() {
       const initialPhotoUrl = userProfile?.profilePictureUrl || authUser?.photoURL || '';
       form.reset({
         displayName: userProfile?.displayName || authUser?.displayName || '',
+        username: userProfile?.username || '',
         bio: userProfile?.bio || '',
         profilePictureUrl: initialPhotoUrl,
       });
@@ -169,7 +171,7 @@ export default function EditProfilePage() {
     router.push('/profile');
 
     const user = auth.currentUser;
-    const { displayName, bio } = values;
+    const { displayName, username, bio } = values;
     let profilePictureUrl = values.profilePictureUrl || ''; // Ensure it's not undefined
 
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -179,6 +181,7 @@ export default function EditProfilePage() {
         id: user.uid,
         email: user.email,
         displayName,
+        username,
         bio,
     };
     
@@ -401,6 +404,20 @@ export default function EditProfilePage() {
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Your Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your_username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

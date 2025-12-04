@@ -50,6 +50,7 @@ export default function SearchPage() {
   const firestore = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [submittedSearch, setSubmittedSearch] = useState('');
+  const [searchBy, setSearchBy] = useState<'name' | 'username'>('name');
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -68,11 +69,11 @@ export default function SearchPage() {
     if (!firestore || !submittedSearch) return null;
     return query(
         collection(firestore, 'users'), 
-        where('displayName', '>=', submittedSearch), 
-        where('displayName', '<=', submittedSearch + '\uf8ff'),
+        where(searchBy === 'name' ? 'displayName' : 'username', '>=', submittedSearch), 
+        where(searchBy === 'name' ? 'displayName' : 'username', '<=', submittedSearch + '\uf8ff'),
         limit(10)
     );
-  }, [firestore, submittedSearch]);
+  }, [firestore, submittedSearch, searchBy]);
 
 
   const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
@@ -80,7 +81,14 @@ export default function SearchPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmittedSearch(searchTerm);
+    const term = searchTerm.trim();
+    if (term.startsWith('@')) {
+        setSearchBy('username');
+        setSubmittedSearch(term.substring(1));
+    } else {
+        setSearchBy('name');
+        setSubmittedSearch(term);
+    }
   };
   
   const isLoading = itemsLoading || usersLoading;
@@ -89,7 +97,7 @@ export default function SearchPage() {
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <Input 
-            placeholder="Search for items or users..." 
+            placeholder="Search for items, or use '@' for usernames..." 
             className="h-12 text-base" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

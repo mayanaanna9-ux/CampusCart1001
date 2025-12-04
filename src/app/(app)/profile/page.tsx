@@ -59,7 +59,7 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
   // If there's a userId in params, we're viewing someone else's profile.
   // Otherwise, if a user is logged in, we view their own profile.
   const profileUserId = params?.userId || authUser?.uid;
-  const isOwnProfile = !params?.userId && !!authUser;
+  const isOwnProfile = !params?.userId || (authUser?.uid === params?.userId);
 
 
   const userDocRef = useMemoFirebase(() => {
@@ -106,7 +106,9 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
     avatarUrl: userProfile.profilePictureUrl || '',
   };
 
-  const joinDate = authUser && isOwnProfile ? new Date(authUser.metadata.creationTime || Date.now()) : null;
+  const creationTime = isOwnProfile ? authUser?.metadata.creationTime : (userProfile as any).creationTime;
+  const joinDate = creationTime ? new Date(creationTime) : null;
+  
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
@@ -116,9 +118,11 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
         </div>
         <div className="flex-1 text-center md:text-left">
             <h1 className="font-headline text-3xl font-bold">{displayUser.name}</h1>
-            {isOwnProfile && joinDate && (
-                <p className="text-sm text-muted-foreground">
-                    Joined {joinDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {userProfile.username && <p className="text-lg text-muted-foreground">@{userProfile.username}</p>}
+            {userProfile.bio && <p className="mt-2 text-foreground max-w-prose">{userProfile.bio}</p>}
+            {joinDate && (
+                <p className="text-sm text-muted-foreground mt-2">
+                    Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
             )}
             {isOwnProfile && (

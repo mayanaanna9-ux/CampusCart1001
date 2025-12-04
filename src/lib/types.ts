@@ -11,6 +11,7 @@ export type UserProfile = {
     id: string;
     email: string | null;
     displayName: string;
+    username: string;
     profilePictureUrl?: string;
     avatarId?: string;
     bio?: string;
@@ -55,5 +56,3 @@ export type Message = {
   text: string;
   timestamp: Timestamp; // ISO string
 };
-
-    

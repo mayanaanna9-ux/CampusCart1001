@@ -20,6 +20,10 @@
           "type": "string",
           "description": "User's display name."
         },
+        "username": {
+          "type": "string",
+          "description": "User's unique username."
+        },
         "profilePictureUrl": {
           "type": "string",
           "description": "URL of the user's profile picture.",
@@ -37,7 +41,8 @@
       "required": [
         "id",
         "email",
-        "displayName"
+        "displayName",
+        "username"
       ]
     },
     "Item": {
