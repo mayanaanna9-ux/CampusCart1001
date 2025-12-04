@@ -84,7 +84,7 @@ export function ItemCard({ item }: ItemCardProps) {
           ) : seller ? (
             <Link href={`/profile/${seller.id}`} className="flex items-center gap-3 flex-1 overflow-hidden">
               <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-8 w-8" />
-              <p className="flex-1 truncate font-headline text-sm font-semibold hover:underline">{item.name}</p>
+              <p className="flex-1 truncate font-headline text-sm font-semibold hover:underline">{seller.displayName}</p>
             </Link>
           ) : <div className="flex-1" />}
          
@@ -92,7 +92,7 @@ export function ItemCard({ item }: ItemCardProps) {
             <AlertDialog>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -120,8 +120,9 @@ export function ItemCard({ item }: ItemCardProps) {
             </AlertDialog>
           )}
       </CardHeader>
-      <Link href={`/items/${item.id}`} className="block">
-        <CardContent className="p-0">
+      
+      <CardContent className="p-0">
+        <Link href={`/items/${item.id}`} className="block">
           {displayUrl && (
             <div className="aspect-square w-full overflow-hidden bg-muted relative">
               <Image
@@ -132,13 +133,16 @@ export function ItemCard({ item }: ItemCardProps) {
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={imageHint}
               />
-              <div className="absolute bottom-0 w-full p-3 bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-lg font-bold text-white">${item.price.toFixed(2)}</p>
-              </div>
             </div>
           )}
-        </CardContent>
-      </Link>
+        </Link>
+        <div className="p-3">
+          <Link href={`/items/${item.id}`}>
+            <h3 className="font-semibold truncate hover:underline">{item.name}</h3>
+          </Link>
+          <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
+        </div>
+      </CardContent>
     </Card>
   );
 }

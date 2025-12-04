@@ -123,40 +123,38 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
             </AlertDialog>
           </div>
         )}
-        <Link href={`/items/${item.id}`} className="block">
-            <CardContent className="p-0">
-            {displayUrl && (
-                <div className="aspect-video w-full overflow-hidden relative">
-                <Image
-                    src={displayUrl}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    data-ai-hint={imageHint}
-                />
-                <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>
-                </div>
-            )}
-            <div className="p-4 space-y-2">
-                    <h3 className="font-headline text-lg font-semibold truncate">{item.name}</h3>
-                    <div className="flex items-center justify-between">
-                        <p className="text-xl font-bold text-primary">${item.price.toFixed(2)}</p>
-                        {sellerLoading ? (
-                            <div className="flex items-center gap-2">
-                                <Skeleton className="h-6 w-6 rounded-full" />
-                                <Skeleton className="h-5 w-16" />
-                            </div>
-                        ) : seller && (
-                            <Link href={`/profile/${seller.id}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
-                                <span className="text-sm font-medium text-muted-foreground hover:underline">{seller.displayName}</span>
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-        </Link>
+        <CardContent className="p-0">
+          {displayUrl && (
+            <Link href={`/items/${item.id}`} className="block aspect-video w-full overflow-hidden relative">
+              <Image
+                  src={displayUrl}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  data-ai-hint={imageHint}
+              />
+              <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>
+            </Link>
+          )}
+          <div className="p-4 space-y-2">
+                  <Link href={`/items/${item.id}`}><h3 className="font-headline text-lg font-semibold truncate hover:underline">{item.name}</h3></Link>
+                  <div className="flex items-center justify-between">
+                      <p className="text-xl font-bold text-primary">${item.price.toFixed(2)}</p>
+                      {sellerLoading ? (
+                          <div className="flex items-center gap-2">
+                              <Skeleton className="h-6 w-6 rounded-full" />
+                              <Skeleton className="h-5 w-16" />
+                          </div>
+                      ) : seller && (
+                          <Link href={`/profile/${seller.id}`} className="flex items-center gap-2">
+                              <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
+                              <span className="text-sm font-medium text-muted-foreground hover:underline">{seller.displayName}</span>
+                          </Link>
+                      )}
+                  </div>
+              </div>
+        </CardContent>
       </div>
     </Card>
   );
