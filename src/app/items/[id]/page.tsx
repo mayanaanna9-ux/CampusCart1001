@@ -81,7 +81,7 @@ export default function ItemPage({ params }: ItemPageProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser, loading: userLoading } = useUser();
-  const [isCreatingThread, setIsCreatingThread] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const routeParams = useParams();
   const id = routeParams.id as string;
 
@@ -110,74 +110,21 @@ export default function ItemPage({ params }: ItemPageProps) {
     notFound();
   }
 
-  const handleMessageSeller = async () => {
-    if (!currentUser || !seller || !firestore || !item) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to message a seller.' });
+  const handleAddToCart = async () => {
+    if (!currentUser || !item) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
         return;
     }
-    if (currentUser.uid === seller.id) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You cannot message yourself.' });
-        return;
-    }
-
-    setIsCreatingThread(true);
-    const threadId = [currentUser.uid, seller.id].sort().join('_') + `_${item.id}`;
-    
-    const userThreadRef = doc(firestore, 'users', currentUser.uid, 'messageThreads', threadId);
-
-    
-    const threadDoc = await getDoc(userThreadRef);
-    if (threadDoc.exists()) {
-      router.push(`/messages/${threadId}`);
-      return;
-    }
-    
-    const batch = writeBatch(firestore);
-    const timestamp = serverTimestamp();
-    
-    const threadData = {
-      id: threadId,
-      itemId: item.id,
-      participants: [currentUser.uid, seller.id],
-      participantDetails: {
-          [currentUser.uid]: {
-              name: currentUser.displayName,
-              avatarUrl: currentUser.photoURL,
-          },
-          [seller.id]: {
-              name: seller.displayName,
-              avatarUrl: seller.profilePictureUrl,
-          }
-      },
-      itemPreview: {
-          name: item.name,
-          imageUrl: item.imageUrls[0],
-      },
-      lastMessageText: 'Started a new conversation!',
-      lastMessageTimestamp: timestamp,
-    }
-
-    // Create thread for current user
-    batch.set(userThreadRef, threadData);
-    
-    // Create thread for seller
-    const sellerThreadRef = doc(firestore, 'users', seller.id, 'messageThreads', threadId);
-    batch.set(sellerThreadRef, threadData);
-
-    batch.commit().then(() => {
-        router.push(`/messages/${threadId}`);
-    }).catch(error => {
-        console.error("Error creating chat thread:", error);
-        const permissionError = new FirestorePermissionError({
-          path: userThreadRef.path, // The path of one of the attempted writes
-          operation: 'write',
-          requestResourceData: threadData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Please check permissions.' });
-    }).finally(() => {
-        setIsCreatingThread(false);
+    setIsAddingToCart(true);
+    toast({
+        title: 'Adding to cart...',
+        description: `${item.name} has been added to your cart.`
     });
+    // In a real app, you would add the item to a 'cart' subcollection in the user's document.
+    // For now, we just show a toast.
+    setTimeout(() => {
+        setIsAddingToCart(false);
+    }, 1000);
   }
 
   const images = (item.imageUrls || []).map(url => ({ imageUrl: url, imageHint: 'product image' }));
@@ -321,16 +268,13 @@ export default function ItemPage({ params }: ItemPageProps) {
           )}
           
           <div className="space-y-2 pt-2">
-            <Button size="lg" className="w-full font-bold" onClick={handleMessageSeller} disabled={isCreatingThread || currentUser?.uid === seller?.id}>
-                {isCreatingThread ? (
+             <Button size="lg" className="w-full font-bold" onClick={handleAddToCart} disabled={isAddingToCart || currentUser?.uid === seller?.id}>
+                {isAddingToCart ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                     <ShoppingCart className="mr-2 h-4 w-4" />
                 )}
-                Buy Item
-            </Button>
-             <Button size="lg" className="w-full font-bold" variant="secondary">
-                <Heart className="mr-2 h-5 w-5" /> Add to Cart
+                Add to Cart
             </Button>
           </div>
 
@@ -339,5 +283,3 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   );
 }
-
-    

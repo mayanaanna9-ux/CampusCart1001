@@ -159,62 +159,6 @@
         "name"
       ]
     },
-    "Message": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Message",
-      "type": "object",
-      "description": "Represents a direct message between users.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Message entity."
-        },
-        "senderId": {
-          "type": "string",
-          "description": "Reference to UserProfile of the sender. (Relationship: UserProfile 1:N Message as Sender)"
-        },
-        "receiverId": {
-          "type": "string",
-          "description": "Reference to UserProfile of the receiver. (Relationship: UserProfile 1:N Message as Receiver)"
-        },
-        "itemId": {
-          "type": "string",
-          "description": "Reference to Item. (Relationship: Item 1:N Message).  The item the message pertains to."
-        },
-        "content": {
-          "type": "string",
-          "description": "Content of the message."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp of when the message was sent.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "senderId",
-        "receiverId",
-        "content",
-        "timestamp"
-      ]
-    },
-    "MessageThread": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "MessageThread",
-      "type": "object",
-      "description": "Represents a conversation thread between two users about an item.",
-      "properties": {
-        "id": { "type": "string", "description": "Unique ID for the thread." },
-        "itemId": { "type": "string", "description": "The ID of the item being discussed." },
-        "participants": { "type": "array", "items": { "type": "string" }, "description": "An array containing the UIDs of both participants." },
-        "participantDetails": { "type": "object", "description": "Denormalized user info for display." },
-        "itemPreview": { "type": "object", "description": "Denormalized item info for display." },
-        "lastMessageText": { "type": "string", "description": "The text of the last message sent." },
-        "lastMessageTimestamp": { "type": "string", "format": "date-time", "description": "Timestamp of the last message." }
-      },
-      "required": ["id", "itemId", "participants", "lastMessageTimestamp"]
-    },
     "Avatar": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Avatar",
@@ -298,50 +242,6 @@
         }
       },
       {
-        "path": "/users/{userId}/messageThreads/{threadId}",
-        "definition": {
-          "entityName": "MessageThread",
-          "schema": {
-            "$ref": "#/backend/entities/MessageThread"
-          },
-          "description": "Stores conversation threads. Nested under a user for security.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user."
-            },
-            {
-              "name": "threadId",
-              "description": "The ID of the message thread."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/messageThreads/{threadId}/messages/{messageId}",
-        "definition": {
-          "entityName": "Message",
-          "schema": {
-            "$ref": "#/backend/entities/Message"
-          },
-          "description": "Stores direct messages between users. Uses hierarchical path. Path-based ownership ensures data is secured.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique ID of the user."
-            },
-            {
-              "name": "threadId",
-              "description": "The unique ID of the chat."
-            },
-            {
-              "name": "messageId",
-              "description": "The unique ID of the message."
-            }
-          ]
-        }
-      },
-      {
         "path": "/avatars/{avatarId}",
         "definition": {
           "entityName": "Avatar",
@@ -358,6 +258,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Messages are in a subcollection `/users/{userId}/chats/{chatId}/messages/{messageId}` using path-based ownership. Avatars are stored under `/avatars/{avatarId}`.\n\n**Authorization Independence**: The `Item` document denormalizes the `sellerId`, which allows rules to determine ownership of an item directly from the item document without needing to read the user's profile. The message structure uses a hierarchical path. Denormalizing user information into messages (if needed in the future) would further enhance independence, but the current structure uses path-based ownership which is ideal.\n\n**QAPs (Rules are not Filters)**: Items are stored in a top-level `/items` collection. Queries can efficiently filter and list items without requiring complex security rules. Profile data is kept private under each user's document. Messages are similarly secured with path-based access.  The separation of concerns ensures that listing and filtering operations are secure and efficient."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Avatars are stored under `/avatars/{avatarId}`.\n\n**Authorization Independence**: The `Item` document denormalizes the `sellerId`, which allows rules to determine ownership of an item directly from the item document without needing to read the user's profile. \n\n**QAPs (Rules are not Filters)**: Items are stored in a top-level `/items` collection. Queries can efficiently filter and list items without requiring complex security rules. Profile data is kept private under each user's document. The separation of concerns ensures that listing and filtering operations are secure and efficient."
   }
 }

@@ -35,28 +35,3 @@ export type Item = {
   email?: string;
   facebookProfileUrl?: string;
 };
-
-export type MessageThread = {
-  id: string;
-  itemId: string;
-  participants: string[]; // Array of user IDs
-  participantDetails: {
-    [key: string]: {
-      name: string;
-      avatarUrl: string;
-    }
-  }
-  itemPreview: {
-    name: string;
-    imageUrl: string;
-  }
-  lastMessageText: string;
-  lastMessageTimestamp: Timestamp;
-};
-
-export type Message = {
-  id?:string;
-  senderId: string;
-  text: string;
-  timestamp: Timestamp; // ISO string
-};

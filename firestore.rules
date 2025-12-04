@@ -22,29 +22,6 @@ service cloud.firestore {
       // Ensure createdAt is a server timestamp on creation and cannot be modified on update.
       // Also ensure the user document ID matches the authenticated user's ID.
       allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.createdAt == request.time;
-
-      /**
-       * @description Manages message threads within a user's private data tree.
-       */
-      match /messageThreads/{threadId} {
-        // A user can create a thread in their own 'messageThreads' subcollection
-        // as long as their UID is one of the participants in the new thread data.
-        // This rule is what enables the atomic batch write to create a thread for both users.
-        allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
-
-        // Read, update, or delete a thread if the user is a participant.
-        // This is checked against the document that already exists in the database.
-        allow read, update, delete: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
-        
-        /**
-         * @description Manages messages within a specific message thread.
-         */
-        match /messages/{messageId} {
-          // Allow read and write if the user is a participant of the parent thread.
-          // This requires a 'get' call to the parent thread document, which is allowed by the rule above.
-          allow read, write: if isSignedIn() && get(/databases/$(database)/documents/users/$(userId)/messageThreads/$(threadId)).data.participants.hasAny([request.auth.uid]);
-        }
-      }
     }
 
     /**
