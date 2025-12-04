@@ -126,31 +126,28 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
+    
+    router.push('/home');
+    toast({
+        title: "Posting your item...",
+        description: `${values.name} will appear on the feed shortly.`,
+    });
 
     try {
-      // Step 1: Immediately create the document with local data URLs for an optimistic UI update.
+      // Step 1: Create the document with text data and an empty imageUrls array to get an ID.
       const itemData = {
         name: values.name,
         description: values.description,
         price: values.price,
         sellerId: user.uid,
-        imageUrls: values.imageUrls, // Use local data URLs initially
+        imageUrls: [], // Start with an empty array
         postedAt: serverTimestamp(),
       };
       
       const itemsCollection = collection(firestore, 'items');
-      
-      // Step 2: Immediately redirect the user and wait for doc creation.
-      router.push('/home');
-      toast({
-        title: "Posting your item...",
-        description: `${values.name} will appear on the feed shortly.`,
-      });
-
-      // Step 3: In the background, create the doc, then upload images and update it.
-      // Await the document creation to get the ID.
       const docRef = await addDoc(itemsCollection, itemData);
 
+      // Step 2: Upload images to Firebase Storage using the new document ID.
       const uploadedImageUrls = await Promise.all(
         values.imageUrls.map(async (localUrl) => {
           const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
@@ -159,7 +156,7 @@ export function SellForm() {
         })
       );
       
-      // Step 4: Update the document with the final, permanent URLs.
+      // Step 3: Update the document with the final, permanent URLs.
       await updateDoc(docRef, { imageUrls: uploadedImageUrls });
 
     } catch (error: any) {
@@ -170,6 +167,7 @@ export function SellForm() {
         description: error.message || 'There was an error posting your item.',
       });
       setIsSubmitting(false); // Only re-enable form on failure
+      router.back(); // Go back to the sell form if something fails
     }
   }
   
