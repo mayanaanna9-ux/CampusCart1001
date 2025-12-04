@@ -6,32 +6,7 @@ import { MessageSquare, Tag, DollarSign, Search } from 'lucide-react';
 import Link from 'next/link';
 
 // Mock notifications data
-const notifications = [
-  {
-    id: '1',
-    type: 'new_message',
-    userId: 'user1',
-    itemId: 'item1',
-    text: 'sent you a message about "Slightly Used MacBook Air".',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-  },
-  {
-    id: '2',
-    type: 'item_sold',
-    userId: 'user3',
-    itemId: 'item3',
-    text: 'Your item "University Branded Hoodie" has been sold!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: '3',
-    type: 'new_item',
-    userId: 'user2',
-    itemId: 'item2',
-    text: 'posted a new item: "Introduction to Psychology Textbook".',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-];
+const notifications: any[] = [];
 
 const NotificationIcon = ({ type }: { type: string }) => {
   switch (type) {
