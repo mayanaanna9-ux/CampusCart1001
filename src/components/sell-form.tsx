@@ -139,17 +139,17 @@ export function SellForm() {
       };
       
       const itemsCollection = collection(firestore, 'items');
-      const docRefPromise = addDocumentNonBlocking(itemsCollection, itemData);
-
-      // Step 2: Immediately redirect the user.
+      
+      // Step 2: Immediately redirect the user and wait for doc creation.
       router.push('/home');
       toast({
         title: "Posting your item...",
         description: `${values.name} will appear on the feed shortly.`,
       });
 
-      // Step 3: In the background, wait for the doc to be created, then upload images and update the doc.
-      const docRef = await docRefPromise;
+      // Step 3: In the background, create the doc, then upload images and update it.
+      // Await the document creation to get the ID.
+      const docRef = await addDoc(itemsCollection, itemData);
 
       const uploadedImageUrls = await Promise.all(
         values.imageUrls.map(async (localUrl) => {
@@ -160,7 +160,7 @@ export function SellForm() {
       );
       
       // Step 4: Update the document with the final, permanent URLs.
-      updateDocumentNonBlocking(docRef, { imageUrls: uploadedImageUrls });
+      await updateDoc(docRef, { imageUrls: uploadedImageUrls });
 
     } catch (error: any) {
       console.error("Error posting item:", error);
@@ -294,5 +294,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
