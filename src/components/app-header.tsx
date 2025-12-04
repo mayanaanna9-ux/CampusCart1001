@@ -108,7 +108,7 @@ export function AppHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">
+                  <Link href={`/profile/${user.uid}`}>
                     <User className="mr-2" />
                     Profile
                   </Link>
