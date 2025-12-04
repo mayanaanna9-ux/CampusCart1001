@@ -10,7 +10,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
-import { MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, ShoppingCart } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -114,7 +114,9 @@ export function ItemCard({ item }: ItemCardProps) {
                     data-ai-hint={imageHint}
                 />
               ) : (
-                <div className="w-full h-full bg-muted" />
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <ShoppingCart className="h-16 w-16 text-muted-foreground/30" />
+                </div>
               )}
             </div>
         </Link>
