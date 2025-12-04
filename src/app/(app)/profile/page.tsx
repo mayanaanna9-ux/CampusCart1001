@@ -8,10 +8,10 @@ import { Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
-import type { User as AuthUser } from 'firebase/auth';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function ProfileSkeleton() {
   return (
@@ -54,11 +54,13 @@ function ProfileSkeleton() {
 export default function ProfilePage({ params }: { params?: { userId: string } }) {
   const { user: authUser, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   // If there's a userId in params, we're viewing someone else's profile.
   // Otherwise, if a user is logged in, we view their own profile.
   const profileUserId = params?.userId || authUser?.uid;
-  const isOwnProfile = authUser ? profileUserId === authUser.uid : false;
+  const isOwnProfile = !params?.userId && !!authUser;
+
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !profileUserId) return null;
@@ -76,18 +78,26 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
 
   const isLoading = userLoading || profileLoading || itemsLoading;
 
-  if (isLoading || !userProfile) {
-    // Show skeleton if we are loading or if the profile user can't be determined yet or doesn't exist.
-    if (userLoading || (profileUserId && (profileLoading || itemsLoading)) ) return <ProfileSkeleton />;
-    
-    // If not loading and still no profile, it might be a user that truly doesn't exist.
-    if (!profileUserId) {
-       // Or redirect to login if no authUser and no params.userId
-       return <ProfileSkeleton />;
-    }
-
-    // Render skeleton also if userProfile is null after loading
+  // This is the key change: handle loading and missing user states gracefully.
+  if (isLoading) {
     return <ProfileSkeleton />;
+  }
+  
+  // If after loading there is still no profile user ID, we can't show anything.
+  // This could happen if a guest user tries to view their own profile.
+  if (!profileUserId) {
+      router.push('/'); // Redirect unauthenticated users trying to see their own profile
+      return <ProfileSkeleton />; // Show skeleton while redirecting
+  }
+  
+  // If the user profile data could not be fetched for the given ID.
+  if (!userProfile) {
+    return (
+        <div className="container mx-auto max-w-4xl p-4 md:p-6 text-center">
+            <h1 className="font-headline text-2xl font-bold">User not found</h1>
+            <p className="text-muted-foreground">This profile could not be loaded.</p>
+        </div>
+    )
   }
   
   const displayUser: User = {
