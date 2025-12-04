@@ -189,7 +189,8 @@ export function SellForm() {
         title: 'Upload Failed',
         description: error.message || 'There was an error posting your item.',
       });
-      setIsSubmitting(false); 
+    } finally {
+        setIsSubmitting(false);
     }
   }
   
