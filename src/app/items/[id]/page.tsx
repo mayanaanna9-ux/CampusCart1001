@@ -325,9 +325,9 @@ export default function ItemPage({ params }: ItemPageProps) {
                 {isCreatingThread ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <ShoppingCart className="mr-2 h-4 w-4" />
                 )}
-                Message Seller
+                Buy Item
             </Button>
              <Button size="lg" className="w-full font-bold" variant="secondary">
                 <Heart className="mr-2 h-5 w-5" /> Add to Cart
@@ -340,4 +340,3 @@ export default function ItemPage({ params }: ItemPageProps) {
   );
 }
 
-    
