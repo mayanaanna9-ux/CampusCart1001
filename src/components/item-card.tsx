@@ -42,11 +42,11 @@ export function ItemCard({ item }: ItemCardProps) {
   const displayUrl = item.imageUrls?.[0];
   const imageHint = 'product image';
   
-  const isOwner = currentUser && currentUser.uid === item.sellerId;
+  const isOwner = currentUser && item.id && currentUser.uid === item.sellerId;
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!firestore) return;
+    if (!firestore || !item.id) return;
     try {
       await deleteDoc(doc(firestore, 'items', item.id));
       toast({

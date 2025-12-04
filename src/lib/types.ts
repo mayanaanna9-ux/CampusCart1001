@@ -21,7 +21,7 @@ export type UserProfile = {
 }
 
 export type Item = {
-  id?: string;
+  id: string;
   name: string;
   description: string;
   price: number;

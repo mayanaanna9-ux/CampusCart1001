@@ -74,7 +74,7 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
     }
   };
 
-  const isOwner = currentUser && currentUser.uid === item.sellerId;
+  const isOwner = currentUser && item.id && currentUser.uid === item.sellerId;
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg bg-card border-none group">

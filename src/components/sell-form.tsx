@@ -129,7 +129,7 @@ export function SellForm() {
     form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
- async function onSubmit(values: z.infer<typeof formSchema>) {
+ function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
       return;
@@ -142,57 +142,60 @@ export function SellForm() {
     setIsSubmitting(true);
     toast({
         title: "Posting your item...",
-        description: "Please wait while we upload your images.",
+        description: "Your item will be live shortly.",
     });
 
-    try {
-      // 1. Create document in Firestore first to get an ID.
-      const itemData = {
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        condition: values.condition,
-        sellerId: user.uid,
-        imageUrls: [], // Will be updated later
-        postedAt: serverTimestamp(),
-        contactNumber: values.contactNumber || '',
-        location: values.location || '',
-        email: user.email,
-        facebookProfileUrl: values.facebookProfileUrl || '',
-      };
-      
-      const itemsCollection = collection(firestore, 'items');
-      const docRef = await addDoc(itemsCollection, itemData);
+    // Immediately navigate away for a faster user experience
+    router.push('/home');
 
-      // 2. Upload images to storage and get their URLs.
-      const uploadedImageUrls = await Promise.all(
-        values.imageUrls.map(async (localUrl) => {
-          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-          const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
-          return getDownloadURL(uploadResult.ref);
-        })
-      );
-      
-      // 3. Update the Firestore document with the final image URLs and the ID.
-      await updateDoc(docRef, { imageUrls: uploadedImageUrls, id: docRef.id });
+    // All subsequent operations are non-blocking (fire and forget)
+    const runAsyncOperations = async () => {
+        try {
+            // 1. Create document in Firestore first to get an ID.
+            const itemData = {
+                name: values.name,
+                description: values.description,
+                price: values.price,
+                condition: values.condition,
+                sellerId: user.uid,
+                imageUrls: [], // Placeholder, will be updated
+                postedAt: serverTimestamp(),
+                contactNumber: values.contactNumber || '',
+                location: values.location || '',
+                email: user.email,
+                facebookProfileUrl: values.facebookProfileUrl || '',
+            };
+            
+            const itemsCollection = collection(firestore, 'items');
+            const docRef = await addDoc(itemsCollection, itemData);
 
-      toast({
-        title: "Success!",
-        description: `${values.name} has been posted.`,
-      });
-      
-      router.push('/home');
+            // 2. Upload images to storage and get their URLs.
+            const uploadedImageUrls = await Promise.all(
+                values.imageUrls.map(async (localUrl) => {
+                const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+                return getDownloadURL(uploadResult.ref);
+                })
+            );
+            
+            // 3. Update the Firestore document with the final image URLs and the ID.
+            await updateDoc(docRef, { imageUrls: uploadedImageUrls, id: docRef.id });
 
-    } catch (error: any) {
-      console.error("Error posting item:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Upload Failed',
-        description: error.message || 'There was an error posting your item.',
-      });
-    } finally {
-        setIsSubmitting(false);
-    }
+            toast({
+                title: "Success!",
+                description: `${values.name} has been posted.`,
+            });
+        } catch (error: any) {
+            console.error("Error posting item in background:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Post Failed',
+                description: error.message || 'There was an error posting your item.',
+            });
+        }
+    };
+    
+    runAsyncOperations();
   }
   
   if (userLoading) {
