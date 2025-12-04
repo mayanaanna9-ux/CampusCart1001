@@ -21,11 +21,14 @@ import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCart } from '@/context/cart-context';
+import { AppHeader } from '@/components/app-header';
+import Loading from '@/app/loading';
+
 
 type ItemPageProps = {
   params: { id: string };
@@ -77,7 +80,7 @@ function ItemPageSkeleton() {
     )
 }
 
-export default function ItemPage({ params }: ItemPageProps) {
+function ItemPageComponent({ params }: ItemPageProps) {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -288,4 +291,17 @@ export default function ItemPage({ params }: ItemPageProps) {
       </div>
     </div>
   );
+}
+
+export default function ItemPage({ params }: ItemPageProps) {
+  return (
+    <div className="flex min-h-screen flex-col">
+        <AppHeader />
+        <main className="flex-1 bg-muted/20">
+            <Suspense fallback={<Loading />}>
+                <ItemPageComponent params={params} />
+            </Suspense>
+        </main>
+    </div>
+  )
 }
