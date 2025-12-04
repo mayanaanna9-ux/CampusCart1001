@@ -51,54 +51,63 @@ function ProfileSkeleton() {
 }
 
 
-export default function ProfilePage() {
+export default function ProfilePage({ params }: { params?: { userId: string } }) {
   const { user: authUser, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
+  // If there's a userId in params, we're viewing someone else's profile.
+  // Otherwise, we're viewing the current user's profile.
+  const profileUserId = params?.userId || authUser?.uid;
+  const isOwnProfile = !params?.userId || params.userId === authUser?.uid;
+
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !authUser) return null;
-    return doc(firestore, 'users', authUser.uid);
-  }, [firestore, authUser]);
+    if (!firestore || !profileUserId) return null;
+    return doc(firestore, 'users', profileUserId);
+  }, [firestore, profileUserId]);
 
   const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
   
   const userItemsQuery = useMemoFirebase(() => {
-    if (!firestore || !authUser) return null;
-    return query(collection(firestore, 'items'), where('sellerId', '==', authUser.uid));
-  }, [firestore, authUser]);
+    if (!firestore || !profileUserId) return null;
+    return query(collection(firestore, 'items'), where('sellerId', '==', profileUserId));
+  }, [firestore, profileUserId]);
 
   const { data: userItems, isLoading: itemsLoading } = useCollection<Item>(userItemsQuery);
 
   const isLoading = userLoading || profileLoading || itemsLoading;
 
-  if (isLoading || !authUser) {
+  if (isLoading || !userProfile) {
     return <ProfileSkeleton />;
   }
   
-  const currentUser: User = {
-    id: authUser.uid,
-    name: userProfile?.displayName || authUser.displayName || authUser.email || 'User',
-    avatarUrl: userProfile?.profilePictureUrl || authUser.photoURL || '',
+  const displayUser: User = {
+    id: userProfile.id,
+    name: userProfile.displayName || 'User',
+    avatarUrl: userProfile.profilePictureUrl || '',
   };
 
-  const joinDate = new Date(authUser?.metadata.creationTime || Date.now());
+  const joinDate = authUser && isOwnProfile ? new Date(authUser.metadata.creationTime || Date.now()) : null;
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
       <div className="flex flex-col items-center space-y-4 mb-8 md:flex-row md:items-start md:space-y-0 md:space-x-6 md:items-center">
         <div className="relative">
-            <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatarUrl} className="h-28 w-28 border-4 border-card" />
+            <UserAvatar name={displayUser.name} avatarUrl={displayUser.avatarUrl} className="h-28 w-28 border-4 border-card" />
         </div>
         <div className="flex-1 text-center md:text-left">
-            <h1 className="font-headline text-3xl font-bold">{currentUser.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Joined {joinDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-            <Button variant="outline" asChild className="mt-4">
-              <Link href="/profile/edit">
-                <Settings className="mr-2 h-4 w-4" /> Edit Profile
-              </Link>
-            </Button>
+            <h1 className="font-headline text-3xl font-bold">{displayUser.name}</h1>
+            {isOwnProfile && joinDate && (
+                <p className="text-sm text-muted-foreground">
+                    Joined {joinDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+            )}
+            {isOwnProfile && (
+                <Button variant="outline" asChild className="mt-4">
+                  <Link href="/profile/edit">
+                    <Settings className="mr-2 h-4 w-4" /> Edit Profile
+                  </Link>
+                </Button>
+            )}
         </div>
       </div>
 
@@ -115,17 +124,23 @@ export default function ProfilePage() {
                     ))
                 ) : (
                     <div className="col-span-full text-center py-12">
-                        <p className="text-muted-foreground">You haven't listed any items yet.</p>
-                        <Button variant="link" asChild>
-                            <Link href="/sell">Sell an item</Link>
-                        </Button>
+                        <p className="text-muted-foreground">
+                            {isOwnProfile ? "You haven't listed any items yet." : "This user hasn't listed any items."}
+                        </p>
+                        {isOwnProfile && (
+                            <Button variant="link" asChild>
+                                <Link href="/sell">Sell an item</Link>
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>
         </TabsContent>
         <TabsContent value="favorites">
             <div className="text-center py-12">
-                 <p className="text-muted-foreground">You have no favorited items.</p>
+                 <p className="text-muted-foreground">
+                    {isOwnProfile ? "You have no favorited items." : "This user has no favorited items."}
+                </p>
             </div>
         </TabsContent>
       </Tabs>
