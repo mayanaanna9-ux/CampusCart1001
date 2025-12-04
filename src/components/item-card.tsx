@@ -10,12 +10,13 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -97,6 +98,13 @@ export function ItemCard({ item }: ItemCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/items/${item.id}/edit`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit Post
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                       <Trash2 className="mr-2 h-4 w-4" />

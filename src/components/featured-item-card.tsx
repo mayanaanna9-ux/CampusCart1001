@@ -11,12 +11,13 @@ import { Badge } from './ui/badge';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -100,8 +101,15 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
                    </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                      <Link href={`/items/${item.id}/edit`}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit Post
+                      </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete Post
                     </DropdownMenuItem>
