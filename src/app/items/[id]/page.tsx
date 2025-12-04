@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2 } from 'lucide-react';
+import { MessageSquare, ShoppingCart, Loader2, ArrowLeft } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -178,6 +179,12 @@ export default function ItemPage({ params }: ItemPageProps) {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
+      <Button asChild variant="ghost" className="mb-4 pl-0">
+        <Link href="/home">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+        </Link>
+      </Button>
       <div className="grid md:grid-cols-2 gap-8">
         <div>
           <Carousel className="w-full">
