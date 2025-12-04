@@ -1,32 +1,4 @@
 
-/**
- * Core Philosophy: This ruleset implements a hybrid security model tailored for a marketplace application.
- * It combines a strict user-ownership model for private data with a public-read/owner-write model for
- * shared data like item listings. This ensures user privacy while facilitating an open marketplace.
- *
- * Data Structure: Private user data (profiles, messages) is hierarchically organized and siloed under
- * /users/{userId}. Publicly accessible data (items, categories, avatars) is stored in top-level
- * collections for efficient querying and access control.
- *
- * Key Security Decisions:
- * - User Profiles: Users have exclusive create, read, update, and delete (CRUD) access to their own
- *   profile document. Listing all users is explicitly disabled to protect privacy.
- * - Item Listings: All users (including unauthenticated ones) can read and list items. However, only the
- *   authenticated seller can create, update, or delete their own item listings.
- * - Messages & Threads: A user can only access message threads and the messages within them if they are a
- *   participant. Data is stored within the user's own data tree for path-based security.
- * - Public Data: Categories and Avatars are treated as globally readable, read-only collections. Writes
- *   are disabled, assuming they will be managed administratively.
- *
- * Denormalization for Authorization: To ensure fast and secure authorization, the `items` collection
- * contains a denormalized `sellerId` field on each document. This allows security rules to verify
- * ownership for write operations directly from the item document itself, avoiding slow and costly
- * lookups to other collections. The `messageThreads` collection denormalizes participant UIDs for the same reason.
- *
- * Structural Segregation: User-private data is strictly separated into the `/users` collection path.
- * Public marketplace data is kept in top-level collections like `/items` and `/categories`. This
- * segregation simplifies security rules and makes public listing queries safe and performant.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

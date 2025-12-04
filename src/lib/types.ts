@@ -33,15 +33,6 @@ export type Item = {
 export type MessageThread = {
   id: string;
   itemId: string;
-  buyerId: string;
-  sellerId: string;
-  messages: Message[];
-  itemPreview: {
-    name: string;
-    imageUrl: string;
-  }
-  lastMessageText: string;
-  lastMessageTimestamp: Timestamp;
   participants: string[]; // Array of user IDs
   participantDetails: {
     [key: string]: {
@@ -49,6 +40,12 @@ export type MessageThread = {
       avatarUrl: string;
     }
   }
+  itemPreview: {
+    name: string;
+    imageUrl: string;
+  }
+  lastMessageText: string;
+  lastMessageTimestamp: Timestamp;
 };
 
 export type Message = {

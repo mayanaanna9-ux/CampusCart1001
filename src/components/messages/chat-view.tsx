@@ -151,5 +151,3 @@ export function ChatView({ thread, currentUser }: ChatViewProps) {
     </div>
   );
 }
-
-    
