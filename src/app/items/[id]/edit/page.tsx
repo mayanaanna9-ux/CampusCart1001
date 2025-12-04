@@ -42,7 +42,7 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
   condition: z.string().min(1, 'Please select a condition.'),
-  imageUrls: z.array(z.string()).min(1, 'Please upload at least one image.'),
+  imageUrls: z.array(z.string().url()).min(1, 'Please upload at least one image.'),
   contactNumber: z.string().optional(),
   location: z.string().optional(),
   facebookProfileUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
@@ -97,7 +97,6 @@ export default function EditItemPage() {
 
   const { data: item, isLoading: itemLoading } = useDoc<Item>(itemRef);
   
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [removedImageUrls, setRemovedImageUrls] = useState<string[]>([]);
   
@@ -132,41 +131,44 @@ export default function EditItemPage() {
             location: item.location || '',
             facebookProfileUrl: item.facebookProfileUrl || '',
         });
-        setImagePreviews(item.imageUrls);
     }
   }, [item, user, form]);
 
+  const watchedImageUrls = form.watch('imageUrls');
   const isFormDisabled = isSubmitting;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviews = Array.from(files).map(file => {
+      const currentUrls = form.getValues('imageUrls');
+      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+      
+      // We are using data URLs to represent new files for upload
+      const dataUrlPromises = Array.from(files).map(file => {
+        return new Promise<string>(resolve => {
           const reader = new FileReader();
-          return new Promise<string>(resolve => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.readAsDataURL(file);
-          });
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
       });
-      Promise.all(newPreviews).then(dataUrls => {
-        const allPreviews = [...imagePreviews, ...dataUrls];
-        setImagePreviews(allPreviews);
-        form.setValue('imageUrls', allPreviews, { shouldValidate: true, shouldDirty: true });
-      });
+
+      Promise.all(dataUrlPromises).then(dataUrls => {
+         form.setValue('imageUrls', [...currentUrls, ...dataUrls], { shouldValidate: true, shouldDirty: true });
+      })
     }
   };
 
   const removeImage = (index: number) => {
-    const urlToRemove = imagePreviews[index];
+    const currentUrls = [...form.getValues('imageUrls')];
+    const urlToRemove = currentUrls[index];
+
     // If it's a Firebase Storage URL, add it to the list of URLs to be deleted from storage
     if (urlToRemove.startsWith('https://firebasestorage.googleapis.com')) {
       setRemovedImageUrls(prev => [...prev, urlToRemove]);
     }
 
-    const currentPreviews = [...imagePreviews];
-    currentPreviews.splice(index, 1);
-    setImagePreviews(currentPreviews);
-    form.setValue('imageUrls', currentPreviews, { shouldValidate: true, shouldDirty: true });
+    currentUrls.splice(index, 1);
+    form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
  function onSubmit(values: z.infer<typeof formSchema>) {
@@ -191,9 +193,13 @@ export default function EditItemPage() {
           // 1. Delete images that were removed from storage
           await Promise.all(
               removedImageUrls.map(url => {
-                  const imageRef = ref(storage, url);
-                  // Non-blocking, but we can await the collection of promises
-                  return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
+                  try {
+                    const imageRef = ref(storage, url);
+                    return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
+                  } catch (error) {
+                    console.warn("Invalid URL for deletion:", url, error);
+                    return Promise.resolve();
+                  }
               })
           );
           
@@ -270,7 +276,7 @@ export default function EditItemPage() {
                         <FormItem>
                         <FormLabel>Item Images (at least 1 required)</FormLabel>
                             <div className="mt-2 grid grid-cols-3 gap-4">
-                            {imagePreviews.map((src, index) => (
+                            {watchedImageUrls.map((src, index) => (
                                 <div key={index} className="relative aspect-square">
                                 <Image src={src} alt={`Preview ${index}`} fill className="rounded-lg object-cover" sizes="(max-width: 768px) 33vw, 25vw" />
                                 <Button
@@ -426,3 +432,5 @@ export default function EditItemPage() {
     </div>
   );
 }
+
+    
