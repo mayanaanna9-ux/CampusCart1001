@@ -56,9 +56,9 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
   const firestore = useFirestore();
 
   // If there's a userId in params, we're viewing someone else's profile.
-  // Otherwise, we're viewing the current user's profile.
+  // Otherwise, if a user is logged in, we view their own profile.
   const profileUserId = params?.userId || authUser?.uid;
-  const isOwnProfile = !params?.userId || params.userId === authUser?.uid;
+  const isOwnProfile = authUser ? profileUserId === authUser.uid : false;
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !profileUserId) return null;
@@ -77,7 +77,16 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
   const isLoading = userLoading || profileLoading || itemsLoading;
 
   if (isLoading || !userProfile) {
-    return <ProfileSkeleton />;
+    // Show skeleton if we are loading or if the profile user can't be determined yet.
+    if (userLoading || (profileUserId && (profileLoading || itemsLoading)) ) return <ProfileSkeleton />;
+    
+    // If not loading and still no profile, it's a true 404.
+    // This can happen if you visit a profile URL that doesn't exist.
+    if (!profileUserId) {
+       // Or redirect to login if no authUser and no params.userId
+       // This logic can be refined based on desired behavior for /profile when logged out.
+       return <ProfileSkeleton />;
+    }
   }
   
   const displayUser: User = {
