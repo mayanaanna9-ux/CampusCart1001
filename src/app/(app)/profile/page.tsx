@@ -77,16 +77,17 @@ export default function ProfilePage({ params }: { params?: { userId: string } })
   const isLoading = userLoading || profileLoading || itemsLoading;
 
   if (isLoading || !userProfile) {
-    // Show skeleton if we are loading or if the profile user can't be determined yet.
+    // Show skeleton if we are loading or if the profile user can't be determined yet or doesn't exist.
     if (userLoading || (profileUserId && (profileLoading || itemsLoading)) ) return <ProfileSkeleton />;
     
-    // If not loading and still no profile, it's a true 404.
-    // This can happen if you visit a profile URL that doesn't exist.
+    // If not loading and still no profile, it might be a user that truly doesn't exist.
     if (!profileUserId) {
        // Or redirect to login if no authUser and no params.userId
-       // This logic can be refined based on desired behavior for /profile when logged out.
        return <ProfileSkeleton />;
     }
+
+    // Render skeleton also if userProfile is null after loading
+    return <ProfileSkeleton />;
   }
   
   const displayUser: User = {
