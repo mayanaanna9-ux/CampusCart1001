@@ -11,7 +11,7 @@ import { collection, doc, query, where } from 'firebase/firestore';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 function ProfileSkeleton() {
@@ -55,9 +55,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const { user: authUser, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const routeParams = useParams();
 
   // This is the user whose profile we are viewing.
-  const profileUserId = params.userId;
+  const profileUserId = routeParams.userId as string;
   const isOwnProfile = authUser?.uid === profileUserId;
   
   useEffect(() => {
