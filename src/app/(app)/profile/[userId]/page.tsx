@@ -4,7 +4,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { ItemCard } from '@/components/item-card';
 import { Button } from '@/components/ui/button';
-import { Settings, Bot, Loader2 } from 'lucide-react';
+import { Settings, Loader2, MessageSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, doc, query, where, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
@@ -128,6 +128,80 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }
   const joinDate = getJoinDate(userProfile.createdAt);
   
+  const handleMessageUser = async () => {
+    if (!authUser || !userProfile || !firestore) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to message a seller.' });
+        return;
+    }
+    if (authUser.uid === userProfile.id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You cannot message yourself.' });
+        return;
+    }
+
+    setIsCreatingThread(true);
+    // Use a consistent thread ID format based on sorted user UIDs
+    const threadId = [authUser.uid, userProfile.id].sort().join('_');
+    
+    const userThreadRef = doc(firestore, 'users', authUser.uid, 'messageThreads', threadId);
+
+    try {
+        const threadDoc = await getDoc(userThreadRef);
+
+        // Only create the thread if it doesn't already exist
+        if (!threadDoc.exists()) {
+             const batch = writeBatch(firestore);
+             const timestamp = serverTimestamp();
+             
+             const threadData = {
+                id: threadId,
+                itemId: null, // This is a generic chat, not tied to an item
+                participants: [authUser.uid, userProfile.id],
+                participantDetails: {
+                    [authUser.uid]: {
+                        name: authUser.displayName || 'User',
+                        avatarUrl: authUser.photoURL,
+                    },
+                    [userProfile.id]: {
+                        name: userProfile.displayName,
+                        avatarUrl: userProfile.profilePictureUrl,
+                    }
+                },
+                itemPreview: { // Use generic info for non-item chats
+                    name: `Chat with ${userProfile.displayName}`,
+                    imageUrl: userProfile.profilePictureUrl,
+                },
+                lastMessageText: `Started a conversation with ${userProfile.displayName}`,
+                lastMessageTimestamp: timestamp,
+             }
+
+            // Create thread for current user
+            batch.set(userThreadRef, threadData);
+            
+            // Create thread for the other user
+            const otherUserThreadRef = doc(firestore, 'users', userProfile.id, 'messageThreads', threadId);
+            batch.set(otherUserThreadRef, threadData);
+
+            await batch.commit();
+        }
+        
+        // Navigate to the thread page (either existing or newly created)
+        router.push(`/messages/${threadId}`);
+
+    } catch (error) {
+        console.error("Error creating chat thread:", error);
+        // This is a placeholder until the proper error handler is implemented
+        const permissionError = new FirestorePermissionError({
+            path: userThreadRef.path, // We can use either ref path, they are related
+            operation: 'write',
+            requestResourceData: { participants: [authUser.uid, userProfile.id] }, // Simplified data for the error
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a conversation. Check permissions.' });
+    } finally {
+        setIsCreatingThread(false);
+    }
+  }
+
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
@@ -144,11 +218,13 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                     Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
             )}
-            <Button variant="outline" asChild className="mt-4">
-              <Link href="/messages/ai-assistant">
-                <Bot className="mr-2 h-4 w-4" />
-                Chat with AI Assistant
-              </Link>
+            <Button variant="outline" className="mt-4" onClick={handleMessageUser} disabled={isCreatingThread || isOwnProfile}>
+              {isCreatingThread ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="mr-2 h-4 w-4" />
+              )}
+                Message
             </Button>
         </div>
       </div>
