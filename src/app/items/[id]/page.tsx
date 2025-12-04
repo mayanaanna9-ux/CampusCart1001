@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Item, UserProfile } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Carousel,
   CarouselContent,
@@ -167,14 +166,15 @@ export default function ItemPage({ params }: ItemPageProps) {
     }
   }
 
-  const images = (item.imageUrls || []).map(urlOrId => PlaceHolderImages.find(p => p.id === urlOrId || p.imageUrl === urlOrId) || { imageUrl: urlOrId, imageHint: 'product image' }).filter(Boolean);
+  const images = (item.imageUrls || []).map(url => ({ imageUrl: url, imageHint: 'product image' }));
 
-  const conditionMap = {
+  const conditionMap: { [key: string]: string } = {
     'new': 'New',
     'used-like-new': 'Used - Like New',
     'used-good': 'Used - Good',
     'used-fair': 'Used - Fair',
   };
+  const conditionDisplay = item.condition ? conditionMap[item.condition] : 'N/A';
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
@@ -225,8 +225,8 @@ export default function ItemPage({ params }: ItemPageProps) {
         <div className="space-y-6">
           <div>
             <div className="flex gap-2 mb-2">
-                <Badge variant="secondary" className="capitalize">{item.category}</Badge>
-                <Badge variant="outline">{conditionMap[item.condition]}</Badge>
+                {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
+                <Badge variant="outline">{conditionDisplay}</Badge>
             </div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold">{item.name}</h1>
             <p className="text-4xl font-bold text-primary mt-4">${item.price.toFixed(2)}</p>
