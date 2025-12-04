@@ -304,22 +304,19 @@ export default function ItemPage({ params }: ItemPageProps) {
                                 <p className="text-sm text-muted-foreground">Seller</p>
                             </div>
                         </Link>
-                        <Button variant="outline" onClick={handleMessageSeller} disabled={isCreatingThread || currentUser?.uid === seller.id}>
-                            {isCreatingThread ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                            )}
-                            Message
-                        </Button>
                     </CardContent>
                 </Card>
             </div>
           )}
           
           <div className="space-y-2 pt-2">
-            <Button size="lg" className="w-full font-bold">
-                <ShoppingCart className="mr-2 h-5 w-5" /> Buy Now
+            <Button size="lg" className="w-full font-bold" onClick={handleMessageSeller} disabled={isCreatingThread || currentUser?.uid === seller?.id}>
+                {isCreatingThread ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                )}
+                Message Seller
             </Button>
              <Button size="lg" className="w-full font-bold" variant="secondary">
                 <Heart className="mr-2 h-5 w-5" /> Add to Cart
