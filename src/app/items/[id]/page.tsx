@@ -240,25 +240,25 @@ export default function ItemPage({ params }: ItemPageProps) {
           {seller && (
             <div>
               <h2 className="font-headline text-lg font-semibold mb-2">Seller Information</h2>
-              <Card>
-                <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-12 w-12" />
-                        <div>
-                            <p className="font-semibold">{seller.displayName}</p>
-                            <p className="text-sm text-muted-foreground">Seller</p>
-                        </div>
-                    </div>
-                     <Button variant="outline" onClick={handleMessageSeller} disabled={isCreatingThread || currentUser?.uid === seller.id}>
-                        {isCreatingThread ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                        )}
-                        Message
-                    </Button>
-                </CardContent>
-              </Card>
+                <Card className="transition-all hover:shadow-md hover:bg-muted/50">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <Link href={`/profile/${seller.id}`} className="flex items-center gap-3">
+                            <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-12 w-12" />
+                            <div>
+                                <p className="font-semibold">{seller.displayName}</p>
+                                <p className="text-sm text-muted-foreground">Seller</p>
+                            </div>
+                        </Link>
+                        <Button variant="outline" onClick={handleMessageSeller} disabled={isCreatingThread || currentUser?.uid === seller.id}>
+                            {isCreatingThread ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                            )}
+                            Message
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
           )}
 

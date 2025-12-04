@@ -148,10 +148,10 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
                                 <Skeleton className="h-5 w-16" />
                             </div>
                         ) : seller && (
-                            <div className="flex items-center gap-2">
+                            <Link href={`/profile/${seller.id}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
-                                <span className="text-sm font-medium text-muted-foreground">{seller.displayName}</span>
-                            </div>
+                                <span className="text-sm font-medium text-muted-foreground hover:underline">{seller.displayName}</span>
+                            </Link>
                         )}
                     </div>
                 </div>

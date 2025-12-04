@@ -82,9 +82,9 @@ export function ItemCard({ item }: ItemCardProps) {
               <Skeleton className="h-5 flex-1" />
             </div>
           ) : seller ? (
-            <Link href={`/items/${item.id}`} className="flex items-center gap-3 flex-1 overflow-hidden">
+            <Link href={`/profile/${seller.id}`} className="flex items-center gap-3 flex-1 overflow-hidden">
               <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-8 w-8" />
-              <p className="flex-1 truncate font-headline text-sm font-semibold">{item.name}</p>
+              <p className="flex-1 truncate font-headline text-sm font-semibold hover:underline">{item.name}</p>
             </Link>
           ) : <div className="flex-1" />}
          
