@@ -130,7 +130,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   return (
     <div className="container mx-auto max-w-4xl p-4 md:p-6">
-      <div className="flex flex-col items-center space-y-4 mb-8 md:flex-row md:items-start md:space-y-0 md:space-x-6 md:items-center">
+      <div className="flex flex-col items-center space-y-4 mb-8 md:flex-row md:items-start md:space-y-0 md:space-x-6">
         <div className="relative">
             <UserAvatar name={displayUser.name} avatarUrl={displayUser.avatarUrl} className="h-28 w-28 border-4 border-card" />
         </div>
