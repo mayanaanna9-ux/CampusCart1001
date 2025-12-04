@@ -232,7 +232,7 @@ export default function ItemPage({ params }: ItemPageProps) {
           </Carousel>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <div className="flex gap-2 mb-2">
                 {item.category && <Badge variant="secondary" className="capitalize">{item.category}</Badge>}
@@ -276,7 +276,7 @@ export default function ItemPage({ params }: ItemPageProps) {
             <Button size="lg" className="w-full font-bold">
                 <ShoppingCart className="mr-2 h-5 w-5" /> Buy Now
             </Button>
-             <Button size="lg" className="w-full font-bold" variant="outline" disabled>
+             <Button size="lg" className="w-full font-bold" variant="secondary">
                 <Heart className="mr-2 h-5 w-5" /> Add to Cart
             </Button>
           </div>
@@ -286,5 +286,3 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   );
 }
-
-    
