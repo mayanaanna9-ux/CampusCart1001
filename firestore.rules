@@ -20,6 +20,7 @@ service cloud.firestore {
       allow list: if isSignedIn();
       allow update, delete: if isOwner(userId);
       // Ensure createdAt is a server timestamp on creation and cannot be modified on update.
+      // Also ensure the user document ID matches the authenticated user's ID.
       allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.createdAt == request.time;
 
       /**
