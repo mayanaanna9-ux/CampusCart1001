@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
 
 interface ConversationListProps {
   threads: MessageThread[];
@@ -42,7 +43,11 @@ export function ConversationList({ threads, currentUser, onSelectThread, selecte
                 )}
               onClick={() => onSelectThread(thread)}
             >
-              {otherParticipant && <UserAvatar name={otherParticipant.name} avatarUrl={otherParticipant.avatarUrl} className="h-10 w-10 shrink-0" />}
+              {otherParticipant && (
+                 <Link href={`/profile/${otherParticipantId}`} onClick={(e) => e.stopPropagation()}>
+                    <UserAvatar name={otherParticipant.name} avatarUrl={otherParticipant.avatarUrl} className="h-10 w-10 shrink-0" />
+                 </Link>
+              )}
               <div className="flex-1 overflow-hidden">
                 <div className="flex justify-between items-center">
                   <p className="font-bold truncate">{otherParticipant?.name}</p>
