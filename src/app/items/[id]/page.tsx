@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 type ItemPageProps = {
   params: { id: string };
@@ -255,42 +256,6 @@ export default function ItemPage({ params }: ItemPageProps) {
             <h2 className="font-headline text-lg font-semibold mb-2">Description</h2>
             <p className="text-muted-foreground">{item.description}</p>
           </div>
-
-          {(item.email || item.contactNumber || item.location || item.facebookProfileUrl) && (
-            <div>
-              <h2 className="font-headline text-lg font-semibold mb-2">Contact Details</h2>
-              <Card>
-                <CardContent className="p-4 grid gap-2">
-                  {item.email && (
-                      <div className="flex items-center gap-3">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{item.email}</span>
-                      </div>
-                  )}
-                  {item.contactNumber && (
-                      <div className="flex items-center gap-3">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{item.contactNumber}</span>
-                      </div>
-                  )}
-                  {item.location && (
-                      <div className="flex items-center gap-3">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{item.location}</span>
-                      </div>
-                  )}
-                  {item.facebookProfileUrl && (
-                      <div className="flex items-center gap-3">
-                          <Facebook className="h-4 w-4 text-muted-foreground" />
-                           <a href={item.facebookProfileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                                Facebook Profile
-                            </a>
-                      </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
           
           {seller && (
             <div>
@@ -304,6 +269,52 @@ export default function ItemPage({ params }: ItemPageProps) {
                                 <p className="text-sm text-muted-foreground">Seller</p>
                             </div>
                         </Link>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button>CONTACT</Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                                <div className="grid gap-4">
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Contact Information</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                        Reach out to the seller.
+                                        </p>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        {item.email && (
+                                            <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                                <span className="text-sm font-mono">{item.email}</span>
+                                            </div>
+                                        )}
+                                        {item.contactNumber && (
+                                            <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                                <span className="text-sm">{item.contactNumber}</span>
+                                            </div>
+                                        )}
+                                        {item.location && (
+                                            <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <span className="text-sm">{item.location}</span>
+                                            </div>
+                                        )}
+                                        {item.facebookProfileUrl && (
+                                            <div className="grid grid-cols-[20px_1fr] items-center gap-2">
+                                                <Facebook className="h-4 w-4 text-muted-foreground" />
+                                                <a href={item.facebookProfileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                                                        Facebook Profile
+                                                    </a>
+                                            </div>
+                                        )}
+                                        {!item.email && !item.contactNumber && !item.location && !item.facebookProfileUrl &&(
+                                            <p className="text-sm text-muted-foreground">No contact information provided.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </CardContent>
                 </Card>
             </div>
@@ -328,3 +339,5 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   );
 }
+
+    
