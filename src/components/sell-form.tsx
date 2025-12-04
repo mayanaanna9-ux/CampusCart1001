@@ -12,12 +12,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Loader2, X, UserPlus, AlertCircle } from 'lucide-react';
+import { ImagePlus, Loader2, X, UserPlus, AlertCircle, Facebook } from 'lucide-react';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -28,16 +29,24 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
 
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
+  condition: z.string().min(1, 'Please select a condition.'),
   imageUrls: z.array(z.string()).min(1, 'Please upload at least one image.'),
   contactNumber: z.string().optional(),
   location: z.string().optional(),
+  facebookProfileUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
 });
 
 function SellFormSkeleton() {
@@ -84,9 +93,11 @@ export function SellForm() {
       name: '',
       description: '',
       price: 0,
+      condition: '',
       imageUrls: [],
       contactNumber: '',
       location: '',
+      facebookProfileUrl: '',
     },
     mode: 'onChange',
   });
@@ -143,12 +154,14 @@ export function SellForm() {
         name: values.name,
         description: values.description,
         price: values.price,
+        condition: values.condition,
         sellerId: user.uid,
         imageUrls: [], // Start with an empty array
         postedAt: serverTimestamp(),
         contactNumber: values.contactNumber || '',
         location: values.location || '',
         email: user.email,
+        facebookProfileUrl: values.facebookProfileUrl || '',
       };
       
       const itemsCollection = collection(firestore, 'items');
@@ -287,10 +300,34 @@ export function SellForm() {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="condition"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Condition</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a condition" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="used-like-new">Used - Like New</SelectItem>
+                        <SelectItem value="used-good">Used - Good</SelectItem>
+                        <SelectItem value="used-fair">Used - Fair</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                />
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg border p-4">
                 <h3 className="font-medium text-sm">Contact Information (Optional)</h3>
+                <p className="text-sm text-muted-foreground">Provide ways for buyers to contact you. Your email ({user?.email}) will be included automatically.</p>
                 <FormField
                   control={form.control}
                   name="contactNumber"
@@ -304,12 +341,28 @@ export function SellForm() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="facebookProfileUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Facebook Profile URL</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="https://facebook.com/your-profile" {...field} disabled={isFormDisabled} className="pl-8" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location</FormLabel>
+                      <FormLabel>Pickup Location</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Main Campus Library" {...field} disabled={isFormDisabled} />
                       </FormControl>

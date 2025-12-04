@@ -33,6 +33,7 @@ export type Item = {
   contactNumber?: string;
   location?: string;
   email?: string;
+  facebookProfileUrl?: string;
 };
 
 export type MessageThread = {

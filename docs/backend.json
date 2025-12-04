@@ -118,6 +118,11 @@
             "type": "string",
             "description": "Seller's email for this item.",
             "format": "email"
+        },
+        "facebookProfileUrl": {
+            "type": "string",
+            "description": "Seller's Facebook profile URL for this item.",
+            "format": "uri"
         }
       },
       "required": [

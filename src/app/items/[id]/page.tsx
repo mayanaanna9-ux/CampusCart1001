@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin } from 'lucide-react';
+import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin, Facebook } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -256,7 +256,7 @@ export default function ItemPage({ params }: ItemPageProps) {
             <p className="text-muted-foreground">{item.description}</p>
           </div>
 
-          {(item.email || item.contactNumber || item.location) && (
+          {(item.email || item.contactNumber || item.location || item.facebookProfileUrl) && (
             <div>
               <h2 className="font-headline text-lg font-semibold mb-2">Contact Details</h2>
               <Card>
@@ -277,6 +277,14 @@ export default function ItemPage({ params }: ItemPageProps) {
                       <div className="flex items-center gap-3">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">{item.location}</span>
+                      </div>
+                  )}
+                  {item.facebookProfileUrl && (
+                      <div className="flex items-center gap-3">
+                          <Facebook className="h-4 w-4 text-muted-foreground" />
+                           <a href={item.facebookProfileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                                Facebook Profile
+                            </a>
                       </div>
                   )}
                 </CardContent>
