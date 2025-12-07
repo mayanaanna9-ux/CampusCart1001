@@ -24,7 +24,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useStorage, useUser } from '@/firebase';
-import { addDoc, collection, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
@@ -129,7 +129,7 @@ export function SellForm() {
     form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
- function onSubmit(values: z.infer<typeof formSchema>) {
+ async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
       return;
@@ -142,64 +142,53 @@ export function SellForm() {
     setIsSubmitting(true);
     toast({
         title: "Posting your item...",
-        description: "Your item will be live shortly.",
+        description: "Please wait while we upload your item.",
     });
 
-    // Immediately navigate away for a faster user experience
-    router.push('/home');
+    try {
+        const itemData = {
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            condition: values.condition,
+            sellerId: user.uid,
+            postedAt: serverTimestamp(),
+            contactNumber: values.contactNumber || '',
+            location: values.location || '',
+            email: user.email,
+            facebookProfileUrl: values.facebookProfileUrl || '',
+            imageUrls: [], // Start with empty array
+        };
+        
+        const itemsCollection = collection(firestore, 'items');
+        const docRef = await addDoc(itemsCollection, itemData);
 
-    // All subsequent operations are non-blocking (fire and forget)
-    const runAsyncOperations = async () => {
-        try {
-            // 1. Create document in Firestore first to get an ID.
-            const itemData = {
-                name: values.name,
-                description: values.description,
-                price: values.price,
-                condition: values.condition,
-                sellerId: user.uid,
-                imageUrls: values.imageUrls, // Placeholder with data URLs
-                postedAt: serverTimestamp(),
-                contactNumber: values.contactNumber || '',
-                location: values.location || '',
-                email: user.email,
-                facebookProfileUrl: values.facebookProfileUrl || '',
-            };
-            
-            const itemsCollection = collection(firestore, 'items');
-            const docRef = await addDoc(itemsCollection, itemData);
-            await updateDoc(docRef, { id: docRef.id, imageUrls: values.imageUrls });
+        const uploadedImageUrls = await Promise.all(
+            values.imageUrls.map(async (localUrl) => {
+                const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+                return getDownloadURL(uploadResult.ref);
+            })
+        );
+        
+        await updateDoc(docRef, { id: docRef.id, imageUrls: uploadedImageUrls });
 
-            // 2. Upload images to storage and get their URLs.
-            const uploadedImageUrls = await Promise.all(
-                values.imageUrls.map(async (localUrl) => {
-                  if (localUrl.startsWith('data:')) {
-                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
-                    return getDownloadURL(uploadResult.ref);
-                  }
-                  return localUrl; // Should not happen on new post, but good practice
-                })
-            );
-            
-            // 3. Update the Firestore document with the final image URLs.
-            await updateDoc(docRef, { imageUrls: uploadedImageUrls });
+        toast({
+            title: "Success!",
+            description: `${values.name} has been posted.`,
+        });
+        
+        router.push('/home');
 
-            toast({
-                title: "Success!",
-                description: `${values.name} has been posted.`,
-            });
-        } catch (error: any) {
-            console.error("Error posting item in background:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Post Failed',
-                description: error.message || 'There was an error posting your item.',
-            });
-        }
-    };
-    
-    runAsyncOperations();
+    } catch (error: any) {
+        console.error("Error posting item:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Post Failed',
+            description: error.message || 'There was an error posting your item.',
+        });
+        setIsSubmitting(false);
+    }
   }
   
   if (userLoading) {
@@ -303,7 +292,7 @@ export function SellForm() {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
+                    <FormLabel>Price (₱)</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isFormDisabled} />
                     </FormControl>

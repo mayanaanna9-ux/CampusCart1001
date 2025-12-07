@@ -171,7 +171,7 @@ export default function EditItemPage() {
   }
 
  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore || !storage || !item) {
+    if (!user || !firestore || !storage || !item || !item.id) {
       toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
       return;
     }
@@ -340,7 +340,7 @@ export default function EditItemPage() {
                     name="price"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Price ($)</FormLabel>
+                        <FormLabel>Price (₱)</FormLabel>
                         <FormControl>
                         <Input type="number" placeholder="e.g., 50.00" {...field} disabled={isFormDisabled} />
                         </FormControl>

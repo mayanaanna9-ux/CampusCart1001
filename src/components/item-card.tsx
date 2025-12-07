@@ -124,7 +124,7 @@ export function ItemCard({ item }: ItemCardProps) {
           <Link href={`/items/${item.id}`}>
             <h3 className="font-semibold truncate hover:underline">{item.name}</h3>
           </Link>
-          <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
+          <p className="text-lg font-bold text-primary">₱{item.price.toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>

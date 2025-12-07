@@ -60,7 +60,7 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
     e.preventDefault();
     if (!firestore) return;
     try {
-      await deleteDoc(doc(firestore, 'items', item.id));
+      await deleteDoc(doc(firestore, 'items', item.id!));
       toast({
         title: 'Success',
         description: 'Your item has been deleted.',
@@ -124,7 +124,7 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
           <div className="p-4 space-y-2">
                   <Link href={`/items/${item.id}`}><h3 className="font-headline text-lg font-semibold truncate hover:underline">{item.name}</h3></Link>
                   <div className="flex items-center justify-between">
-                      <p className="text-xl font-bold text-primary">${item.price.toFixed(2)}</p>
+                      <p className="text-xl font-bold text-primary">₱{item.price.toFixed(2)}</p>
                       {sellerLoading ? (
                           <div className="flex items-center gap-2">
                               <Skeleton className="h-6 w-6 rounded-full" />
