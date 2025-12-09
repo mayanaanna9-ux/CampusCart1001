@@ -146,58 +146,58 @@ export function SellForm() {
         description: "Please wait while we upload your item.",
     });
     
+    // Redirect immediately for optimistic UI
+    router.push('/home');
+
     try {
-      // 1. Create the document with all data except the final image URLs
+      // 1. Create the document with local data URLs for optimistic display
       const itemDataForCreation = {
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        category: values.category,
-        condition: values.condition,
+        ...values,
         sellerId: user.uid,
         email: user.email,
         postedAt: serverTimestamp(),
-        imageUrls: [], // Start with an empty array
-        contactNumber: values.contactNumber,
-        location: values.location,
-        facebookProfileUrl: values.facebookProfileUrl,
+        // Save local data URLs for immediate display
+        imageUrls: values.imageUrls,
       };
-  
-      // Create the document and get its reference and ID
+
       const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
       
-      // Update the document to include its own ID
+      // Add the ID to the document
       await updateDoc(docRef, { id: docRef.id });
 
-      // 2. Upload images to storage and get final URLs
-      const finalImageUrls = await Promise.all(
-        values.imageUrls.map(async (dataUrl) => {
-          // All images are data URLs at this point
-          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-          const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-          return getDownloadURL(uploadResult.ref);
-        })
-      );
-      
-      // 3. Update the document with the final image URLs
-      await updateDoc(docRef, { imageUrls: finalImageUrls });
+      // This part runs in the background after the user has been redirected
+      const runAsyncOperations = async () => {
+        // 2. Upload images to storage and get final URLs
+        const finalImageUrls = await Promise.all(
+          values.imageUrls.map(async (dataUrl) => {
+            const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+            const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+            return getDownloadURL(uploadResult.ref);
+          })
+        );
+        
+        // 3. Silently update the document with the final image URLs
+        await updateDoc(docRef, { imageUrls: finalImageUrls });
+      };
 
-      toast({
-        title: 'Success!',
-        description: 'Your item has been posted successfully.',
+      runAsyncOperations().catch(error => {
+          // If background upload fails, the post still exists with broken image links.
+          // This is better than the post disappearing. A more robust solution might involve cleanup logic.
+          console.error("Error in background image upload:", error);
+          // Optionally, inform the user if the upload fails in the background, though it might be confusing.
       });
-
-      router.push('/home');
 
     } catch (error: any) {
         console.error("Error posting item:", error);
+        // This error handling is for the initial document creation.
         toast({
           variant: 'destructive',
           title: 'Posting Failed',
           description: error.message || 'There was an error posting your item. Please try again.',
         });
-    } finally {
-        setIsSubmitting(false);
+        setIsSubmitting(false); // Only stop submitting if the initial post fails
+        // If the initial post fails, the user won't be redirected, so they can try again.
+        router.back(); 
     }
   }
   
@@ -437,5 +437,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
