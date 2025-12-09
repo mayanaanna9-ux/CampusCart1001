@@ -40,6 +40,7 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters long.'),
+  category: z.string().min(1, 'Please select a category.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
   condition: z.string().min(1, 'Please select a condition.'),
@@ -93,6 +94,7 @@ export function SellForm() {
       description: '',
       price: 0,
       condition: '',
+      category: '',
       imageUrls: [],
       contactNumber: '',
       location: '',
@@ -151,6 +153,7 @@ export function SellForm() {
             description: values.description,
             price: values.price,
             condition: values.condition,
+            category: values.category,
             sellerId: user.uid,
             postedAt: serverTimestamp(),
             contactNumber: values.contactNumber || '',
@@ -267,6 +270,31 @@ export function SellForm() {
                   <FormControl>
                     <Input placeholder="e.g., MacBook Air" {...field} disabled={isFormDisabled} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="gadgets">Gadgets</SelectItem>
+                      <SelectItem value="school-materials">School Materials</SelectItem>
+                      <SelectItem value="clothes">Clothes</SelectItem>
+                      <SelectItem value="food">Food</SelectItem>
+                      <SelectItem value="other">Others</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

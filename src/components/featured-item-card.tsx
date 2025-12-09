@@ -11,7 +11,7 @@ import { Badge } from './ui/badge';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
-import { MoreVertical, Trash2, Pencil, ShoppingCart } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, ShoppingCart, Book, Shirt, Utensils, VenetianMask } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,11 +22,29 @@ import {
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
+import { Smartphone } from 'lucide-react';
 
 
 type FeaturedItemCardProps = {
   item: Item;
 };
+
+const CategoryIcon = ({ category }: { category?: string }) => {
+    switch (category) {
+        case 'gadgets':
+            return <Smartphone className="h-4 w-4" />;
+        case 'school-materials':
+            return <Book className="h-4 w-4" />;
+        case 'clothes':
+            return <Shirt className="h-4 w-4" />;
+        case 'food':
+            return <Utensils className="h-4 w-4" />;
+        case 'other':
+            return <VenetianMask className="h-4 w-4" />;
+        default:
+            return null;
+    }
+}
 
 export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
   const firestore = useFirestore();
@@ -103,6 +121,11 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
               </DropdownMenu>
           </div>
         )}
+        {item.category && (
+            <div className="absolute top-2 left-2 z-10 bg-background/50 text-foreground p-1.5 rounded-full backdrop-blur-sm">
+                <CategoryIcon category={item.category} />
+            </div>
+        )}
         <CardContent className="p-0">
           <Link href={`/items/${item.id}`} className="block aspect-video w-full overflow-hidden relative">
             {displayUrl ? (
@@ -119,7 +142,7 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
                     <ShoppingCart className="h-16 w-16 text-muted-foreground/30" />
                 </div>
             )}
-            {timeAgo && <Badge variant="secondary" className="absolute top-2 left-2">{timeAgo}</Badge>}
+            {timeAgo && <Badge variant="secondary" className="absolute bottom-2 left-2">{timeAgo}</Badge>}
           </Link>
           <div className="p-4 space-y-2">
                   <Link href={`/items/${item.id}`}><h3 className="font-headline text-lg font-semibold truncate hover:underline">{item.name}</h3></Link>
