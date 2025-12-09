@@ -162,6 +162,7 @@ export default function EditItemPage() {
     const currentUrls = [...form.getValues('imageUrls')];
     const urlToRemove = currentUrls[index];
 
+    // If the URL is a final Firebase Storage URL, mark it for deletion from storage
     if (urlToRemove.startsWith('https://firebasestorage.googleapis.com')) {
       setRemovedImageUrls(prev => [...prev, urlToRemove]);
     }
@@ -170,7 +171,7 @@ export default function EditItemPage() {
     form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
- function onSubmit(values: z.infer<typeof formSchema>) {
+ async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage || !item || !item.id) {
       toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
       return;
@@ -178,63 +179,69 @@ export default function EditItemPage() {
 
     setIsSubmitting(true);
     
-    // Redirect immediately and show toast
     router.push(`/items/${item.id}`);
     toast({
         title: "Updating your item...",
-        description: "Your changes are being saved in the background.",
+        description: "Your changes are being saved. This may take a moment.",
     });
 
-    const runAsyncOperations = async () => {
-      try {
-          // 1. Delete any images marked for removal
-          await Promise.all(
-              removedImageUrls.map(url => {
-                  try {
-                    const imageRef = ref(storage, url);
-                    return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
-                  } catch (error) {
-                    console.warn("Invalid URL for deletion:", url, error);
-                    return Promise.resolve(); // Don't block for invalid URLs
-                  }
-              })
-          );
-          
-          // 2. Upload new images and get their final URLs
-          const finalImageUrls = await Promise.all(
-              values.imageUrls.map(async (url) => {
-                  // If it's a data URL, it's a new image that needs uploading
-                  if (url.startsWith('data:')) {
-                      const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
-                      const uploadResult = await uploadString(storageRef, url, 'data_url');
-                      return getDownloadURL(uploadResult.ref);
-                  }
-                  // Otherwise, it's an existing URL, so keep it
-                  return url;
-              })
-          );
+    try {
+        // Optimistically update the UI with local data URLs first
+        const docRef = doc(firestore, 'items', item.id);
+        await updateDoc(docRef, { ...values, updatedAt: serverTimestamp() });
 
-          // 3. Update the Firestore document with all new data
-          const itemData = {
-              ...values,
-              imageUrls: finalImageUrls,
-              updatedAt: serverTimestamp(),
-          };
+        // Then handle background tasks
+        const runAsyncOperations = async () => {
+            // Delete images marked for removal
+            await Promise.all(
+                removedImageUrls.map(url => {
+                    try {
+                        const imageRef = ref(storage, url);
+                        return deleteObject(imageRef);
+                    } catch (error) {
+                        console.warn("Invalid URL for deletion:", url, error);
+                        return Promise.resolve();
+                    }
+                })
+            );
+            
+            // Upload new images and get their final URLs
+            const finalImageUrls = await Promise.all(
+                values.imageUrls.map(async (url) => {
+                    if (url.startsWith('data:')) {
+                        const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
+                        const uploadResult = await uploadString(storageRef, url, 'data_url');
+                        return getDownloadURL(uploadResult.ref);
+                    }
+                    return url;
+                })
+            );
+
+            // Update the document again with the final, permanent URLs
+            await updateDoc(docRef, {
+                imageUrls: finalImageUrls,
+                updatedAt: serverTimestamp(),
+            });
+        };
         
-          const docRef = doc(firestore, 'items', item.id);
-          await updateDoc(docRef, itemData);
-
-      } catch (error: any) {
-        console.error("Error updating item in background:", error);
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: `There was an error updating "${values.name}". Please try again.`,
+        runAsyncOperations().catch(error => {
+            console.error("Error updating item in background:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: `There was a background error updating "${values.name}". Some changes might not have been saved.`,
+            });
         });
-      }
-    };
 
-    runAsyncOperations();
+    } catch (error: any) {
+        console.error("Error submitting item update:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: `There was an error updating "${values.name}". Please try again.`,
+        });
+        setIsSubmitting(false); // Only set to false on initial error
+    }
   }
   
   const isLoading = userLoading || itemLoading;
@@ -468,5 +475,3 @@ export default function EditItemPage() {
     </div>
   );
 }
-
-    

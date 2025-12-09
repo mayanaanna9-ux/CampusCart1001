@@ -12,7 +12,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -131,7 +130,7 @@ export function SellForm() {
     form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
- function onSubmit(values: z.infer<typeof formSchema>) {
+ async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
       return;
@@ -142,63 +141,58 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
-    
-    // Immediately redirect and show toast
     router.push('/home');
     toast({
         title: "Posting your item...",
-        description: "Your item is being uploaded in the background. It will appear on the feed shortly.",
+        description: "Your item is being uploaded. It will appear on the feed shortly.",
     });
 
-    // All subsequent operations happen in the background
-    const runAsyncOperations = async () => {
-        try {
-            const itemData = {
-                name: values.name,
-                description: values.description,
-                price: values.price,
-                condition: values.condition,
-                category: values.category,
-                sellerId: user.uid,
-                postedAt: serverTimestamp(),
-                contactNumber: values.contactNumber || '',
-                location: values.location || '',
-                email: user.email,
-                facebookProfileUrl: values.facebookProfileUrl || '',
-                imageUrls: [], // Start with empty array
-            };
-            
-            // 1. Create document in Firestore to get an ID
-            const itemsCollection = collection(firestore, 'items');
-            const docRef = await addDoc(itemsCollection, itemData);
-
-            // 2. Upload images to Storage using the new document ID
-            const uploadedImageUrls = await Promise.all(
-                values.imageUrls.map(async (localUrl) => {
+    try {
+        const itemDataForCreation = {
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            condition: values.condition,
+            category: values.category,
+            sellerId: user.uid,
+            postedAt: serverTimestamp(),
+            contactNumber: values.contactNumber || '',
+            location: values.location || '',
+            email: user.email,
+            facebookProfileUrl: values.facebookProfileUrl || '',
+            // Optimistically set local data URLs for immediate (though temporary) display if needed elsewhere
+            imageUrls: values.imageUrls,
+        };
+        
+        const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
+        
+        // Now upload images and update the doc with final URLs
+        const uploadedImageUrls = await Promise.all(
+            values.imageUrls.map(async (url) => {
+                if (url.startsWith('data:')) {
                     const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+                    const uploadResult = await uploadString(storageRef, url, 'data_url');
                     return getDownloadURL(uploadResult.ref);
-                })
-            );
-            
-            // 3. Update the document with the final image URLs and the ID itself
-            await updateDoc(docRef, { 
-                id: docRef.id, 
-                imageUrls: uploadedImageUrls 
-            });
+                }
+                return url; // Should not happen on create, but good practice
+            })
+        );
+        
+        await updateDoc(docRef, { 
+            id: docRef.id, 
+            imageUrls: uploadedImageUrls 
+        });
 
-        } catch (error: any) {
-            console.error("Error posting item in background:", error);
-            // This toast will appear on the home page
-            toast({
-                variant: 'destructive',
-                title: 'Post Failed',
-                description: `There was an error posting "${values.name}". Please try again.`,
-            });
-        }
-    };
-    
-    runAsyncOperations();
+    } catch (error: any) {
+        console.error("Error posting item:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Post Failed',
+            description: `There was an error posting "${values.name}". Please try again.`,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   if (userLoading) {
@@ -361,7 +355,7 @@ export function SellForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Condition</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFormDisabled}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a condition" />
@@ -437,5 +431,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
