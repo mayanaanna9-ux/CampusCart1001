@@ -131,7 +131,7 @@ export function SellForm() {
     form.setValue('imageUrls', currentUrls, { shouldValidate: true, shouldDirty: true });
   }
 
- async function onSubmit(values: z.infer<typeof formSchema>) {
+ function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !storage) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be signed in to sell items.' });
       return;
@@ -142,56 +142,66 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
+    
+    // Immediately navigate away for a faster perceived experience
+    router.push('/home');
+
     toast({
         title: "Posting your item...",
-        description: "Please wait while we upload your item.",
+        description: "Your item is being uploaded in the background.",
     });
 
-    try {
-        const itemData = {
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            condition: values.condition,
-            category: values.category,
-            sellerId: user.uid,
-            postedAt: serverTimestamp(),
-            contactNumber: values.contactNumber || '',
-            location: values.location || '',
-            email: user.email,
-            facebookProfileUrl: values.facebookProfileUrl || '',
-            imageUrls: [], // Start with empty array
-        };
-        
-        const itemsCollection = collection(firestore, 'items');
-        const docRef = await addDoc(itemsCollection, itemData);
+    const runAsyncOperations = async () => {
+        try {
+            const itemData = {
+                name: values.name,
+                description: values.description,
+                price: values.price,
+                condition: values.condition,
+                category: values.category,
+                sellerId: user.uid,
+                postedAt: serverTimestamp(),
+                contactNumber: values.contactNumber || '',
+                location: values.location || '',
+                email: user.email,
+                facebookProfileUrl: values.facebookProfileUrl || '',
+                imageUrls: [], // Start with empty array
+            };
+            
+            const itemsCollection = collection(firestore, 'items');
+            const docRef = await addDoc(itemsCollection, itemData);
 
-        const uploadedImageUrls = await Promise.all(
-            values.imageUrls.map(async (localUrl) => {
-                const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
-                return getDownloadURL(uploadResult.ref);
-            })
-        );
-        
-        await updateDoc(docRef, { id: docRef.id, imageUrls: uploadedImageUrls });
+            const uploadedImageUrls = await Promise.all(
+                values.imageUrls.map(async (localUrl) => {
+                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                    const uploadResult = await uploadString(storageRef, localUrl, 'data_url');
+                    return getDownloadURL(uploadResult.ref);
+                })
+            );
+            
+            await updateDoc(docRef, { id: docRef.id, imageUrls: uploadedImageUrls });
 
-        toast({
-            title: "Success!",
-            description: `${values.name} has been posted.`,
-        });
-        
-        router.push('/home');
+            toast({
+                title: "Success!",
+                description: `${values.name} has been posted.`,
+            });
 
-    } catch (error: any) {
-        console.error("Error posting item:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Post Failed',
-            description: error.message || 'There was an error posting your item.',
-        });
-        setIsSubmitting(false);
-    }
+        } catch (error: any) {
+            console.error("Error posting item:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Post Failed',
+                description: error.message || 'There was an error posting your item.',
+            });
+            // If it fails, maybe navigate back to the sell page or show a permanent error.
+            // For now, we'll just show the toast. The user is already on the home page.
+        } finally {
+            // This runs in the background, so no need to setIsSubmitting(false) for the UI
+        }
+    };
+    
+    // Execute the async operations without blocking the UI thread.
+    runAsyncOperations();
   }
   
   if (userLoading) {
@@ -410,3 +420,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
