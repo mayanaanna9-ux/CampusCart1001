@@ -141,12 +141,7 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
-    router.push('/home');
-    toast({
-        title: "Posting your item...",
-        description: "Your item is being uploaded. It will appear on the feed shortly.",
-    });
-
+    
     try {
         const itemDataForCreation = {
             name: values.name,
@@ -160,13 +155,11 @@ export function SellForm() {
             location: values.location || '',
             email: user.email,
             facebookProfileUrl: values.facebookProfileUrl || '',
-            // Optimistically set local data URLs for immediate (though temporary) display if needed elsewhere
-            imageUrls: values.imageUrls,
+            imageUrls: [], // Start with empty array
         };
         
         const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
         
-        // Now upload images and update the doc with final URLs
         const uploadedImageUrls = await Promise.all(
             values.imageUrls.map(async (url) => {
                 if (url.startsWith('data:')) {
@@ -174,7 +167,7 @@ export function SellForm() {
                     const uploadResult = await uploadString(storageRef, url, 'data_url');
                     return getDownloadURL(uploadResult.ref);
                 }
-                return url; // Should not happen on create, but good practice
+                return url; 
             })
         );
         
@@ -183,6 +176,13 @@ export function SellForm() {
             imageUrls: uploadedImageUrls 
         });
 
+        toast({
+            title: "Success!",
+            description: `Your item "${values.name}" has been posted.`,
+        });
+
+        router.push('/home');
+
     } catch (error: any) {
         console.error("Error posting item:", error);
         toast({
@@ -190,7 +190,6 @@ export function SellForm() {
             title: 'Post Failed',
             description: `There was an error posting "${values.name}". Please try again.`,
         });
-    } finally {
         setIsSubmitting(false);
     }
   }
