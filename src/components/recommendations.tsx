@@ -17,6 +17,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
       try {
         if (allItems.length === 0) {
             setRecommendedItems([]);
+            setLoading(false);
             return;
         }
 
@@ -35,25 +36,41 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
         
         const filteredItems = allItems.filter(item => recommendedNames.includes(item.name.toLowerCase()));
         
-        // If AI gives nothing, show some random items
-        if(filteredItems.length === 0 && allItems.length > 0) {
-            setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
+        if (filteredItems.length === 0 && allItems.length > 0) {
+            // Fallback if AI returns no matches
+            const sortedByDate = [...allItems].sort((a, b) => {
+                const dateA = a.postedAt ? new Date((a.postedAt as any).seconds * 1000).getTime() : 0;
+                const dateB = b.postedAt ? new Date((b.postedAt as any).seconds * 1000).getTime() : 0;
+                return dateB - dateA;
+            });
+            setRecommendedItems(sortedByDate.slice(0, 2));
         } else {
             setRecommendedItems(filteredItems);
         }
 
       } catch (error) {
-        console.error("AI recommendations failed, falling back to random items:", error);
-        // Fallback to showing some random items on error
+        console.error("AI recommendations failed, falling back to recent items:", error);
         if (allItems.length > 0) {
-          setRecommendedItems([...allItems].sort(() => 0.5 - Math.random()).slice(0, 2));
+          // Fallback to showing the 2 most recent items on any error
+           const sortedByDate = [...allItems].sort((a, b) => {
+                const dateA = a.postedAt ? new Date((a.postedAt as any).seconds * 1000).getTime() : 0;
+                const dateB = b.postedAt ? new Date((b.postedAt as any).seconds * 1000).getTime() : 0;
+                return dateB - dateA;
+            });
+          setRecommendedItems(sortedByDate.slice(0, 2));
         }
       } finally {
         setLoading(false);
       }
     };
 
-    getRecommendations();
+    // Use a timeout to avoid immediate re-render issues in strict mode
+    const timer = setTimeout(() => {
+        getRecommendations();
+    }, 0);
+
+
+    return () => clearTimeout(timer);
 
   }, [allItems, userHistoryData]);
 
@@ -61,13 +78,13 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
     return (
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="aspect-square w-full" />
+            <Skeleton className="h-6 w-3/4 mt-2" />
             <Skeleton className="h-6 w-1/4" />
         </div>
         <div className="space-y-2">
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="aspect-square w-full" />
+            <Skeleton className="h-6 w-3/4 mt-2" />
             <Skeleton className="h-6 w-1/4" />
         </div>
       </div>
