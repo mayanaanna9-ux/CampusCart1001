@@ -66,49 +66,20 @@ export default function HomePage() {
     return <HomeSkeleton />;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const getComparableDate = (postedAt: any): Date => {
-    if (!postedAt) return new Date(0); // Return a very old date if undefined
-    // Check for Firestore Timestamp
-    if (typeof postedAt === 'object' && postedAt !== null && typeof postedAt.toDate === 'function') {
-      return postedAt.toDate();
-    }
-    // Check for ISO string or other date string formats
-    if (typeof postedAt === 'string') {
-      const date = new Date(postedAt);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-    // Check if it's already a Date object
-    if (postedAt instanceof Date) {
-      return postedAt;
-    }
-    // Fallback for unknown types
-    return new Date(0);
-  };
-
-  const todaysItems = (items || [])
-    .filter(item => getComparableDate(item.postedAt) >= today)
-    .sort((a, b) => getComparableDate(b.postedAt).getTime() - getComparableDate(a.postedAt).getTime());
-
-
   return (
     <div className="container mx-auto max-w-5xl p-4 md:p-6">
       <section className="mt-8 space-y-4">
         <h2 className="font-headline text-2xl font-bold">Latest Sales Today✨🔥</h2>
-        {todaysItems.length > 0 ? (
+        {items && items.length > 0 ? (
             <Carousel
                 opts={{
                     align: 'start',
-                    loop: todaysItems.length > 1,
+                    loop: items.length > 1,
                 }}
                 className="w-full"
                 >
                 <CarouselContent>
-                    {todaysItems.map((item) => (
+                    {items.map((item) => (
                         <CarouselItem key={item.id} className="md:basis-1/2 lg:basis-1/3">
                             <FeaturedItemCard item={item} />
                         </CarouselItem>
