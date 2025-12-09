@@ -19,10 +19,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { useState } from 'react';
-import { handleUserCreation } from '@/components/signup-form';
+import { handleUserCreation } from '@/lib/user-creation';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -59,7 +60,16 @@ export function LoginForm() {
       toast({
         title: "Logged in successfully!",
       });
-      router.push('/home');
+
+      const userDocRef = doc(firestore, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists() && userDoc.data().profilePictureUrl) {
+          router.push('/home');
+      } else {
+          router.push('/setup-profile');
+      }
+
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password') {
             toast({
@@ -92,7 +102,7 @@ export function LoginForm() {
         toast({
           title: "Signed in as guest!",
         });
-        router.push('/home');
+        router.push('/setup-profile');
       } catch (error: any) {
         toast({
             variant: "destructive",
