@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Item } from '@/lib/types';
 import { Recommendations } from '@/components/recommendations';
@@ -57,7 +57,7 @@ export default function HomePage() {
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'));
+    return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'), limit(10));
   }, [firestore]);
 
   const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
