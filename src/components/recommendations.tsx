@@ -13,8 +13,9 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
   const recommendationsFetched = useRef(false);
 
   useEffect(() => {
+    // Only run if we have items and haven't fetched recommendations yet.
     if (recommendationsFetched.current || allItems.length === 0) {
-      if(allItems.length === 0 && loading) {
+      if (allItems.length === 0 && loading) {
         setLoading(false);
       }
       return;
@@ -68,7 +69,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
 
     getRecommendations();
 
-  }, [allItems, userHistoryData, loading]);
+  }, [allItems, userHistoryData]);
 
   if (loading) {
     return (
