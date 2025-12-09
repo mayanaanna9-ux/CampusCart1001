@@ -69,7 +69,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
 
     getRecommendations();
 
-  }, [allItems, userHistoryData]);
+  }, [allItems, userHistoryData, loading]);
 
   if (loading) {
     return (
