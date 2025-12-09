@@ -25,8 +25,8 @@ export type Item = {
   name: string;
   description: string;
   price: number;
-  category?: 'gadgets' | 'school-materials' | 'clothes' | 'food' | 'other';
-  condition?: 'new' | 'used-like-new' | 'used-good' | 'used-fair';
+  category: string;
+  condition: string;
   sellerId: string;
   imageUrls: string[];
   postedAt: Timestamp | string; // Allow both for optimistic updates and server values
@@ -35,3 +35,5 @@ export type Item = {
   email?: string;
   facebookProfileUrl?: string;
 };
+
+    
