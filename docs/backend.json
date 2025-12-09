@@ -183,6 +183,23 @@
         "id",
         "imageUrl"
       ]
+    },
+    "Notification": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Notification",
+        "type": "object",
+        "description": "Represents a notification for a user.",
+        "properties": {
+            "id": { "type": "string" },
+            "recipientId": { "type": "string" },
+            "senderId": { "type": "string" },
+            "itemId": { "type": "string" },
+            "type": { "type": "string", "enum": ["buy_now", "new_message", "item_sold"] },
+            "text": { "type": "string" },
+            "read": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "recipientId", "senderId", "itemId", "type", "text", "read", "createdAt"]
     }
   },
   "auth": {
@@ -256,8 +273,22 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+            "entityName": "Notification",
+            "schema": {
+                "$ref": "#/backend/entities/Notification"
+            },
+            "description": "Stores notifications for a user.",
+            "params": [
+              { "name": "userId", "description": "The unique ID of the user." },
+              { "name": "notificationId", "description": "The unique ID of the notification." }
+            ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Avatars are stored under `/avatars/{avatarId}`.\n\n**Authorization Independence**: The `Item` document denormalizes the `sellerId`, which allows rules to determine ownership of an item directly from the item document without needing to read the user's profile. \n\n**QAPs (Rules are not Filters)**: Items are stored in a top-level `/items` collection. Queries can efficiently filter and list items without requiring complex security rules. Profile data is kept private under each user's document. The separation of concerns ensures that listing and filtering operations are secure and efficient."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Campus Cart application. User profiles are stored under `/users/{userId}` using path-based ownership. Items are stored under `/items/{itemId}` and include the `sellerId` to easily identify the seller. Categories are stored in a top-level `/categories` collection. Avatars are stored under `/avatars/{avatarId}`. Notifications are stored as a subcollection under each user to ensure they are private."
   }
 }

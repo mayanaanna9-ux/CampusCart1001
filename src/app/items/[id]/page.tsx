@@ -5,8 +5,8 @@ import { notFound, useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, collection, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
-import type { Item, UserProfile } from '@/lib/types';
+import { doc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { Item, UserProfile, Notification } from '@/lib/types';
 import {
   Carousel,
   CarouselContent,
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin, Facebook } from 'lucide-react';
+import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin, Facebook, Send } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -86,6 +86,7 @@ function ItemPageComponent({ params }: ItemPageProps) {
   const firestore = useFirestore();
   const { user: currentUser, loading: userLoading } = useUser();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
   const routeParams = useParams();
   const id = routeParams.id as string;
   const { addToCart } = useCart();
@@ -114,6 +115,42 @@ function ItemPageComponent({ params }: ItemPageProps) {
   if (!item) {
     notFound();
   }
+  
+  const handleBuyItem = async () => {
+    if (!currentUser || !firestore || !item || !seller) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to buy an item.' });
+        return;
+    }
+    setIsSendingNotification(true);
+    const notification: Omit<Notification, 'id'> = {
+        recipientId: seller.id,
+        senderId: currentUser.uid,
+        itemId: item.id!,
+        type: 'buy_now',
+        text: `wants to buy your item: ${item.name}`,
+        read: false,
+        createdAt: serverTimestamp(),
+    };
+
+    try {
+        const notificationsCollection = collection(firestore, 'users', seller.id, 'notifications');
+        await addDoc(notificationsCollection, notification);
+        toast({
+            title: 'Notification Sent!',
+            description: `The seller has been notified that you want to buy "${item.name}".`,
+        });
+    } catch (error) {
+         console.error('Error sending notification:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not send notification. Please try again.',
+        });
+    } finally {
+        setIsSendingNotification(false);
+    }
+  }
+
 
   const handleAddToCart = async () => {
     if (!currentUser) {
@@ -277,14 +314,26 @@ function ItemPageComponent({ params }: ItemPageProps) {
           )}
           
           <div className="space-y-2 pt-2">
-             <Button size="lg" className="w-full font-bold" onClick={handleAddToCart} disabled={isAddingToCart || currentUser?.uid === seller?.id}>
-                {isAddingToCart ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                )}
-                Add to Cart
-            </Button>
+             {currentUser?.uid !== seller?.id && (
+                <>
+                    <Button size="lg" className="w-full font-bold" onClick={handleBuyItem} disabled={isSendingNotification}>
+                         {isSendingNotification ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                         ) : (
+                            <Send className="mr-2 h-4 w-4" />
+                         )}
+                         Buy Item
+                    </Button>
+                    <Button size="lg" variant="outline" className="w-full font-bold" onClick={handleAddToCart} disabled={isAddingToCart}>
+                        {isAddingToCart ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                        )}
+                        Add to Cart
+                    </Button>
+                </>
+            )}
           </div>
 
         </div>

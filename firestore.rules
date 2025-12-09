@@ -22,6 +22,16 @@ service cloud.firestore {
       // Ensure createdAt is a server timestamp on creation and cannot be modified on update.
       // Also ensure the user document ID matches the authenticated user's ID.
       allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.createdAt == request.time;
+
+      /**
+       * @description Manages notifications for a specific user.
+       */
+      match /notifications/{notificationId} {
+        allow read, update, delete: if isOwner(userId);
+        // Any signed-in user can create a notification for another user,
+        // but they must correctly identify themselves as the sender.
+        allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
+      }
     }
 
     /**

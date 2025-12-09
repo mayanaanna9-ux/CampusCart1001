@@ -36,4 +36,13 @@ export type Item = {
   facebookProfileUrl?: string;
 };
 
-    
+export type Notification = {
+    id: string;
+    recipientId: string; // The user who should receive the notification
+    senderId: string; // The user who triggered the notification
+    itemId: string; // The item related to the notification
+    type: 'buy_now' | 'new_message' | 'item_sold'; // Type of notification
+    text: string; // The content of the notification
+    read: boolean; // Whether the notification has been read
+    createdAt: Timestamp | any; // Using `any` for serverTimestamp()
+};
