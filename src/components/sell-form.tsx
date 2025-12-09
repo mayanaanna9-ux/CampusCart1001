@@ -142,7 +142,6 @@ export function SellForm() {
 
     setIsSubmitting(true);
     
-    // Redirect immediately and show a toast for optimistic UI
     router.push('/home');
     toast({
         title: "Posting your item...",
@@ -150,48 +149,45 @@ export function SellForm() {
     });
     
     try {
-        const itemDataForCreation = {
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            category: values.category,
-            condition: values.condition,
-            sellerId: user.uid,
-            email: user.email,
-            postedAt: serverTimestamp(),
-            imageUrls: [], // Start with empty array
-            contactNumber: values.contactNumber,
-            location: values.location,
-            facebookProfileUrl: values.facebookProfileUrl,
-        };
+      const itemDataForCreation = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        category: values.category,
+        condition: values.condition,
+        sellerId: user.uid,
+        email: user.email,
+        postedAt: serverTimestamp(),
+        imageUrls: values.imageUrls, // Optimistically use local data URLs
+        contactNumber: values.contactNumber,
+        location: values.location,
+        facebookProfileUrl: values.facebookProfileUrl,
+      };
+  
+      const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
+      await updateDoc(docRef, { id: docRef.id });
 
-        // 1. Create the document in Firestore to get an ID.
-        const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
-
-        // 2. Upload images to a path that includes the new document's ID.
+      const runAsyncOperations = async () => {
         const finalImageUrls = await Promise.all(
-            values.imageUrls.map(async (url) => {
-                if (url.startsWith('data:')) {
-                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, url, 'data_url');
-                    return getDownloadURL(uploadResult.ref);
-                }
-                return url; // Should not happen in this flow, but good practice.
-            })
+          values.imageUrls.map(async (url) => {
+            if (url.startsWith('data:')) {
+              const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+              const uploadResult = await uploadString(storageRef, url, 'data_url');
+              return getDownloadURL(uploadResult.ref);
+            }
+            return url;
+          })
         );
         
-        // 3. Update the document with the final image URLs and the correct ID.
-        await updateDoc(docRef, {
-            id: docRef.id,
-            imageUrls: finalImageUrls,
-        });
+        await updateDoc(docRef, { imageUrls: finalImageUrls });
+      };
+
+      runAsyncOperations().catch(error => {
+        console.error("Error in background item update:", error);
+      });
 
     } catch (error: any) {
         console.error("Error posting item:", error);
-        // The user has already been redirected, so we just log the error.
-        // A more robust system might use a global state to show a "failed" toast
-        // even after redirection, but for now, this avoids the user-facing "Posting failed" alert
-        // that blocks them.
     }
   }
   
@@ -431,5 +427,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
