@@ -70,7 +70,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
 
     getRecommendations();
 
-  }, [allItems, userHistoryData, loading]);
+  }, [allItems, userHistoryData]);
 
   if (loading) {
     return (
