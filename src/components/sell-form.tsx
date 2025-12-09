@@ -141,14 +141,13 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
-    
-    router.push('/home');
     toast({
         title: "Posting your item...",
-        description: "Your item is being uploaded. It will appear on the home page shortly.",
+        description: "Please wait while we upload your item.",
     });
     
     try {
+      // 1. Create the document with all data except the final image URLs
       const itemDataForCreation = {
         name: values.name,
         description: values.description,
@@ -158,36 +157,47 @@ export function SellForm() {
         sellerId: user.uid,
         email: user.email,
         postedAt: serverTimestamp(),
-        imageUrls: values.imageUrls, // Optimistically use local data URLs
+        imageUrls: [], // Start with an empty array
         contactNumber: values.contactNumber,
         location: values.location,
         facebookProfileUrl: values.facebookProfileUrl,
       };
   
+      // Create the document and get its reference and ID
       const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
+      
+      // Update the document to include its own ID
       await updateDoc(docRef, { id: docRef.id });
 
-      const runAsyncOperations = async () => {
-        const finalImageUrls = await Promise.all(
-          values.imageUrls.map(async (url) => {
-            if (url.startsWith('data:')) {
-              const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-              const uploadResult = await uploadString(storageRef, url, 'data_url');
-              return getDownloadURL(uploadResult.ref);
-            }
-            return url;
-          })
-        );
-        
-        await updateDoc(docRef, { imageUrls: finalImageUrls });
-      };
+      // 2. Upload images to storage and get final URLs
+      const finalImageUrls = await Promise.all(
+        values.imageUrls.map(async (dataUrl) => {
+          // All images are data URLs at this point
+          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+          const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+          return getDownloadURL(uploadResult.ref);
+        })
+      );
+      
+      // 3. Update the document with the final image URLs
+      await updateDoc(docRef, { imageUrls: finalImageUrls });
 
-      runAsyncOperations().catch(error => {
-        console.error("Error in background item update:", error);
+      toast({
+        title: 'Success!',
+        description: 'Your item has been posted successfully.',
       });
+
+      router.push('/home');
 
     } catch (error: any) {
         console.error("Error posting item:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Posting Failed',
+          description: error.message || 'There was an error posting your item. Please try again.',
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   }
   
@@ -427,3 +437,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
