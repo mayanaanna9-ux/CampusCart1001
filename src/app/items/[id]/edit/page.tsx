@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Loader2, X, Facebook, ArrowLeft } from 'lucide-react';
+import { ImagePlus, Loader2, X, Facebook, ArrowLeft, Smartphone, Book, Shirt, Utensils, VenetianMask } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -120,7 +120,6 @@ export default function EditItemPage() {
   useEffect(() => {
     if (item) {
         if (user && item.sellerId !== user.uid) {
-            // Redirect if the current user is not the seller
             return notFound();
         }
         form.reset({
@@ -145,7 +144,6 @@ export default function EditItemPage() {
     if (files) {
       const currentUrls = form.getValues('imageUrls');
       
-      // We are using data URLs to represent new files for upload
       const dataUrlPromises = Array.from(files).map(file => {
         return new Promise<string>(resolve => {
           const reader = new FileReader();
@@ -164,7 +162,6 @@ export default function EditItemPage() {
     const currentUrls = [...form.getValues('imageUrls')];
     const urlToRemove = currentUrls[index];
 
-    // If it's a Firebase Storage URL, add it to the list of URLs to be deleted from storage
     if (urlToRemove.startsWith('https://firebasestorage.googleapis.com')) {
       setRemovedImageUrls(prev => [...prev, urlToRemove]);
     }
@@ -186,13 +183,10 @@ export default function EditItemPage() {
         description: "Your changes are being saved in the background.",
     });
 
-    // Immediately navigate away
     router.push(`/items/${item.id}`);
 
-    // Perform all storage and Firestore operations in the background (non-blocking)
     const runAsyncOperations = async () => {
       try {
-          // 1. Delete images that were removed from storage
           await Promise.all(
               removedImageUrls.map(url => {
                   try {
@@ -205,19 +199,17 @@ export default function EditItemPage() {
               })
           );
           
-          // 2. Upload new images and get their URLs
           const finalImageUrls = await Promise.all(
               values.imageUrls.map(async (url) => {
-                  if (url.startsWith('data:')) { // It's a new base64 image
+                  if (url.startsWith('data:')) {
                       const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
                       const uploadResult = await uploadString(storageRef, url, 'data_url');
                       return getDownloadURL(uploadResult.ref);
                   }
-                  return url; // It's an existing URL
+                  return url;
               })
           );
 
-          // 3. Update the Firestore document with all new data
           const itemData = {
               ...values,
               imageUrls: finalImageUrls,
@@ -227,7 +219,6 @@ export default function EditItemPage() {
           const docRef = doc(firestore, 'items', item.id);
           await updateDoc(docRef, itemData);
 
-          // Optional: Show a success toast only after everything is actually done
           toast({
             title: "Success!",
             description: `${values.name} has been updated.`,
@@ -240,8 +231,6 @@ export default function EditItemPage() {
           title: 'Update Failed',
           description: error.message || 'There was an error updating your item.',
         });
-      } finally {
-          // This would run on the server/background, so no need to set submitting state
       }
     };
 
@@ -336,11 +325,31 @@ export default function EditItemPage() {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="gadgets">Gadgets</SelectItem>
-                            <SelectItem value="school-materials">School Materials</SelectItem>
-                            <SelectItem value="clothes">Clothes</SelectItem>
-                            <SelectItem value="food">Food</SelectItem>
-                            <SelectItem value="other">Others</SelectItem>
+                             <SelectItem value="gadgets">
+                                <div className="flex items-center gap-2">
+                                    <Smartphone className="h-4 w-4" /> Gadgets
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="school-materials">
+                                <div className="flex items-center gap-2">
+                                    <Book className="h-4 w-4" /> School Materials
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="clothes">
+                                <div className="flex items-center gap-2">
+                                    <Shirt className="h-4 w-4" /> Clothes
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="food">
+                                <div className="flex items-center gap-2">
+                                    <Utensils className="h-4 w-4" /> Food
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="other">
+                                <div className="flex items-center gap-2">
+                                    <VenetianMask className="h-4 w-4" /> Others
+                                </div>
+                            </SelectItem>
                         </SelectContent>
                         </Select>
                         <FormMessage />

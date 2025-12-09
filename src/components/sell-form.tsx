@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ImagePlus, Loader2, X, UserPlus, AlertCircle, Facebook } from 'lucide-react';
+import { ImagePlus, Loader2, X, UserPlus, AlertCircle, Facebook, Smartphone, Book, Shirt, Utensils, VenetianMask } from 'lucide-react';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -143,7 +143,6 @@ export function SellForm() {
 
     setIsSubmitting(true);
     
-    // Immediately navigate away for a faster perceived experience
     router.push('/home');
 
     toast({
@@ -165,7 +164,7 @@ export function SellForm() {
                 location: values.location || '',
                 email: user.email,
                 facebookProfileUrl: values.facebookProfileUrl || '',
-                imageUrls: [], // Start with empty array
+                imageUrls: [], // Start with empty array, will be updated
             };
             
             const itemsCollection = collection(firestore, 'items');
@@ -193,14 +192,9 @@ export function SellForm() {
                 title: 'Post Failed',
                 description: error.message || 'There was an error posting your item.',
             });
-            // If it fails, maybe navigate back to the sell page or show a permanent error.
-            // For now, we'll just show the toast. The user is already on the home page.
-        } finally {
-            // This runs in the background, so no need to setIsSubmitting(false) for the UI
         }
     };
     
-    // Execute the async operations without blocking the UI thread.
     runAsyncOperations();
   }
   
@@ -298,11 +292,31 @@ export function SellForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="gadgets">Gadgets</SelectItem>
-                      <SelectItem value="school-materials">School Materials</SelectItem>
-                      <SelectItem value="clothes">Clothes</SelectItem>
-                      <SelectItem value="food">Food</SelectItem>
-                      <SelectItem value="other">Others</SelectItem>
+                      <SelectItem value="gadgets">
+                          <div className="flex items-center gap-2">
+                              <Smartphone className="h-4 w-4" /> Gadgets
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="school-materials">
+                           <div className="flex items-center gap-2">
+                              <Book className="h-4 w-4" /> School Materials
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="clothes">
+                           <div className="flex items-center gap-2">
+                              <Shirt className="h-4 w-4" /> Clothes
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="food">
+                           <div className="flex items-center gap-2">
+                              <Utensils className="h-4 w-4" /> Food
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="other">
+                           <div className="flex items-center gap-2">
+                              <VenetianMask className="h-4 w-4" /> Others
+                          </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -420,5 +434,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
