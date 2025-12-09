@@ -143,13 +143,14 @@ export function SellForm() {
 
     setIsSubmitting(true);
     
+    // Immediately redirect and show toast
     router.push('/home');
-
     toast({
         title: "Posting your item...",
-        description: "Your item is being uploaded in the background.",
+        description: "Your item is being uploaded in the background. It will appear on the feed shortly.",
     });
 
+    // All subsequent operations happen in the background
     const runAsyncOperations = async () => {
         try {
             const itemData = {
@@ -164,12 +165,14 @@ export function SellForm() {
                 location: values.location || '',
                 email: user.email,
                 facebookProfileUrl: values.facebookProfileUrl || '',
-                imageUrls: [], // Start with empty array, will be updated
+                imageUrls: [], // Start with empty array
             };
             
+            // 1. Create document in Firestore to get an ID
             const itemsCollection = collection(firestore, 'items');
             const docRef = await addDoc(itemsCollection, itemData);
 
+            // 2. Upload images to Storage using the new document ID
             const uploadedImageUrls = await Promise.all(
                 values.imageUrls.map(async (localUrl) => {
                     const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
@@ -178,19 +181,25 @@ export function SellForm() {
                 })
             );
             
-            await updateDoc(docRef, { id: docRef.id, imageUrls: uploadedImageUrls });
-
-            toast({
-                title: "Success!",
-                description: `${values.name} has been posted.`,
+            // 3. Update the document with the final image URLs and the ID itself
+            await updateDoc(docRef, { 
+                id: docRef.id, 
+                imageUrls: uploadedImageUrls 
             });
 
+            // The success toast is now optional, as the user is already on the home page
+            // toast({
+            //     title: "Success!",
+            //     description: `${values.name} has been posted.`,
+            // });
+
         } catch (error: any) {
-            console.error("Error posting item:", error);
+            console.error("Error posting item in background:", error);
+            // This toast will appear on the home page
             toast({
                 variant: 'destructive',
                 title: 'Post Failed',
-                description: error.message || 'There was an error posting your item.',
+                description: `There was an error posting "${values.name}". Please try again.`,
             });
         }
     };

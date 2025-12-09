@@ -178,15 +178,16 @@ export default function EditItemPage() {
 
     setIsSubmitting(true);
     
+    // Redirect immediately and show toast
+    router.push(`/items/${item.id}`);
     toast({
         title: "Updating your item...",
         description: "Your changes are being saved in the background.",
     });
 
-    router.push(`/items/${item.id}`);
-
     const runAsyncOperations = async () => {
       try {
+          // 1. Delete any images marked for removal
           await Promise.all(
               removedImageUrls.map(url => {
                   try {
@@ -194,22 +195,26 @@ export default function EditItemPage() {
                     return deleteObject(imageRef).catch(err => console.warn("Failed to delete old image:", err));
                   } catch (error) {
                     console.warn("Invalid URL for deletion:", url, error);
-                    return Promise.resolve();
+                    return Promise.resolve(); // Don't block for invalid URLs
                   }
               })
           );
           
+          // 2. Upload new images and get their final URLs
           const finalImageUrls = await Promise.all(
               values.imageUrls.map(async (url) => {
+                  // If it's a data URL, it's a new image that needs uploading
                   if (url.startsWith('data:')) {
                       const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
                       const uploadResult = await uploadString(storageRef, url, 'data_url');
                       return getDownloadURL(uploadResult.ref);
                   }
+                  // Otherwise, it's an existing URL, so keep it
                   return url;
               })
           );
 
+          // 3. Update the Firestore document with all new data
           const itemData = {
               ...values,
               imageUrls: finalImageUrls,
@@ -219,17 +224,18 @@ export default function EditItemPage() {
           const docRef = doc(firestore, 'items', item.id);
           await updateDoc(docRef, itemData);
 
-          toast({
-            title: "Success!",
-            description: `${values.name} has been updated.`,
-          });
+          // Optional: A success toast on the destination page
+          // toast({
+          //   title: "Success!",
+          //   description: `${values.name} has been updated.`,
+          // });
 
       } catch (error: any) {
         console.error("Error updating item in background:", error);
         toast({
           variant: 'destructive',
           title: 'Update Failed',
-          description: error.message || 'There was an error updating your item.',
+          description: `There was an error updating "${values.name}". Please try again.`,
         });
       }
     };
