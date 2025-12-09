@@ -68,9 +68,10 @@ export const handleUserCreation = async (
       displayName: displayName || existingData.displayName,
       profilePictureUrl: user.photoURL || existingData.profilePictureUrl || '',
     };
-    setDocumentNonBlocking(userDocRef, profileData, { merge: true });
+    // Important: Use the authenticated user's UID for the document reference.
+    setDocumentNonBlocking(doc(firestore, 'users', user.uid), profileData, { merge: true });
   } else {
-    // On sign-up, create the full document.
+    // On sign-up, create the full document for the new user.
     const userProfile: UserProfile = {
       id: user.uid,
       email: user.email,
@@ -81,7 +82,8 @@ export const handleUserCreation = async (
       location: location || '',
       contactNumber: contactNumber || '',
     };
-    setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+    // Important: Use the authenticated user's UID for the document reference.
+    setDocumentNonBlocking(doc(firestore, 'users', user.uid), userProfile, { merge: true });
   }
 };
 
