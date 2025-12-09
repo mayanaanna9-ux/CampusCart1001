@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { Item, User } from '@/lib/types';
+import { useEffect, useState, useRef } from 'react';
+import type { Item } from '@/lib/types';
 import { recommendRelevantItems } from '@/ai/flows/recommend-relevant-items';
 import { ItemCard } from './item-card';
 import { Skeleton } from './ui/skeleton';
@@ -10,17 +10,20 @@ import { Skeleton } from './ui/skeleton';
 export function Recommendations({ allItems, userHistoryData }: { allItems: Item[], userHistoryData: any }) {
   const [recommendedItems, setRecommendedItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const recommendationsFetched = useRef(false);
 
   useEffect(() => {
+    if (recommendationsFetched.current || allItems.length === 0) {
+        if(allItems.length === 0) {
+            setLoading(false);
+            setRecommendedItems([]);
+        }
+      return;
+    }
+
     const getRecommendations = async () => {
       setLoading(true);
       try {
-        if (allItems.length === 0) {
-            setRecommendedItems([]);
-            setLoading(false);
-            return;
-        }
-
         const availableItemsStr = JSON.stringify(allItems.map(i => ({ id: i.id, name: i.name, description: i.description })));
         const userHistoryStr = JSON.stringify(userHistoryData);
         
@@ -36,41 +39,34 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
         
         const filteredItems = allItems.filter(item => recommendedNames.includes(item.name.toLowerCase()));
         
-        if (filteredItems.length === 0 && allItems.length > 0) {
-            // Fallback if AI returns no matches
+        if (filteredItems.length > 0) {
+            setRecommendedItems(filteredItems);
+        } else {
+            // Fallback if AI returns no matches or junk
             const sortedByDate = [...allItems].sort((a, b) => {
                 const dateA = a.postedAt ? new Date((a.postedAt as any).seconds * 1000).getTime() : 0;
                 const dateB = b.postedAt ? new Date((b.postedAt as any).seconds * 1000).getTime() : 0;
                 return dateB - dateA;
             });
             setRecommendedItems(sortedByDate.slice(0, 2));
-        } else {
-            setRecommendedItems(filteredItems);
         }
 
       } catch (error) {
         console.error("AI recommendations failed, falling back to recent items:", error);
-        if (allItems.length > 0) {
-          // Fallback to showing the 2 most recent items on any error
-           const sortedByDate = [...allItems].sort((a, b) => {
-                const dateA = a.postedAt ? new Date((a.postedAt as any).seconds * 1000).getTime() : 0;
-                const dateB = b.postedAt ? new Date((b.postedAt as any).seconds * 1000).getTime() : 0;
-                return dateB - dateA;
-            });
-          setRecommendedItems(sortedByDate.slice(0, 2));
-        }
+        // Fallback to showing the 2 most recent items on any error
+        const sortedByDate = [...allItems].sort((a, b) => {
+            const dateA = a.postedAt ? new Date((a.postedAt as any).seconds * 1000).getTime() : 0;
+            const dateB = b.postedAt ? new Date((b.postedAt as any).seconds * 1000).getTime() : 0;
+            return dateB - dateA;
+        });
+        setRecommendedItems(sortedByDate.slice(0, 2));
       } finally {
         setLoading(false);
+        recommendationsFetched.current = true;
       }
     };
 
-    // Use a timeout to avoid immediate re-render issues in strict mode
-    const timer = setTimeout(() => {
-        getRecommendations();
-    }, 0);
-
-
-    return () => clearTimeout(timer);
+    getRecommendations();
 
   }, [allItems, userHistoryData]);
 
