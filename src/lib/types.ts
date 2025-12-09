@@ -15,7 +15,7 @@ export type UserProfile = {
     profilePictureUrl?: string;
     avatarId?: string;
     bio?: string;
-    createdAt?: Timestamp;
+    createdAt?: Timestamp | Date;
     location?: string;
     contactNumber?: string;
 }
@@ -29,7 +29,7 @@ export type Item = {
   condition: string;
   sellerId: string;
   imageUrls: string[];
-  postedAt: Timestamp | string; // Allow both for optimistic updates and server values
+  postedAt: Timestamp | Date; // Allow both for optimistic updates and server values
   contactNumber?: string;
   location?: string;
   email?: string;

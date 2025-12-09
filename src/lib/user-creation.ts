@@ -41,13 +41,13 @@ export const handleUserCreation = async (
     setDocumentNonBlocking(doc(firestore, 'users', user.uid), profileData, { merge: true });
   } else {
     // On sign-up, create the full document for the new user.
-    const userProfile: UserProfile = {
+    const userProfile: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
       id: user.uid,
       email: user.email,
       displayName: displayName || '',
       username: username || '',
       profilePictureUrl: user.photoURL || '',
-      createdAt: serverTimestamp() as any,
+      createdAt: serverTimestamp(),
       location: location || '',
       contactNumber: contactNumber || '',
     };

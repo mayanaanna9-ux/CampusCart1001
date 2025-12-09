@@ -143,6 +143,21 @@ export function SellForm() {
     setIsSubmitting(true);
     
     try {
+        const tempId = `temp_${Date.now()}`;
+        
+        // 1. Upload images and get their URLs
+        const uploadedImageUrls = await Promise.all(
+            values.imageUrls.map(async (url) => {
+                if (url.startsWith('data:')) {
+                    const storageRef = ref(storage, `items/${user.uid}/${tempId}/${Date.now()}`);
+                    const uploadResult = await uploadString(storageRef, url, 'data_url');
+                    return getDownloadURL(uploadResult.ref);
+                }
+                return url; 
+            })
+        );
+
+        // 2. Create the final item data object with the real URLs
         const itemDataForCreation = {
             name: values.name,
             description: values.description,
@@ -155,26 +170,14 @@ export function SellForm() {
             location: values.location || '',
             email: user.email,
             facebookProfileUrl: values.facebookProfileUrl || '',
-            imageUrls: [], // Start with empty array
+            imageUrls: uploadedImageUrls,
         };
         
+        // 3. Add the document to Firestore
         const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
         
-        const uploadedImageUrls = await Promise.all(
-            values.imageUrls.map(async (url) => {
-                if (url.startsWith('data:')) {
-                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, url, 'data_url');
-                    return getDownloadURL(uploadResult.ref);
-                }
-                return url; 
-            })
-        );
-        
-        await updateDoc(docRef, { 
-            id: docRef.id, 
-            imageUrls: uploadedImageUrls 
-        });
+        // 4. Update the document with its own ID for easy reference
+        await updateDoc(docRef, { id: docRef.id });
 
         toast({
             title: "Success!",
