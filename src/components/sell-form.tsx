@@ -141,50 +141,56 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
+    router.push('/home');
+    toast({
+        title: "Posting your item...",
+        description: "Your item is being uploaded in the background.",
+    });
     
     try {
-        const tempId = `temp_${Date.now()}`;
-        
-        // 1. Upload images and get their URLs
-        const uploadedImageUrls = await Promise.all(
-            values.imageUrls.map(async (url) => {
-                if (url.startsWith('data:')) {
-                    const storageRef = ref(storage, `items/${user.uid}/${tempId}/${Date.now()}`);
-                    const uploadResult = await uploadString(storageRef, url, 'data_url');
-                    return getDownloadURL(uploadResult.ref);
-                }
-                return url; 
-            })
-        );
-
-        // 2. Create the final item data object with the real URLs
+        // Create the initial item data with local data URLs
         const itemDataForCreation = {
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            condition: values.condition,
-            category: values.category,
+            ...values,
             sellerId: user.uid,
-            postedAt: serverTimestamp(),
-            contactNumber: values.contactNumber || '',
-            location: values.location || '',
             email: user.email,
-            facebookProfileUrl: values.facebookProfileUrl || '',
-            imageUrls: uploadedImageUrls,
+            postedAt: serverTimestamp(),
         };
-        
-        // 3. Add the document to Firestore
-        const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
-        
-        // 4. Update the document with its own ID for easy reference
-        await updateDoc(docRef, { id: docRef.id });
 
-        toast({
-            title: "Success!",
-            description: `Your item "${values.name}" has been posted.`,
+        // Add the document to Firestore first (non-blocking style)
+        const docRef = await addDoc(collection(firestore, 'items'), {
+            ...itemDataForCreation,
+            id: 'temp-id', // Temporary ID
         });
+        
+        // Immediately update with the real ID
+        updateDoc(docRef, { id: docRef.id });
 
-        router.push('/home');
+        // Handle image uploads and final URL update in the background
+        const uploadAndFinalize = async () => {
+             const finalImageUrls = await Promise.all(
+                values.imageUrls.map(async (url) => {
+                    if (url.startsWith('data:')) {
+                        const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                        const uploadResult = await uploadString(storageRef, url, 'data_url');
+                        return getDownloadURL(uploadResult.ref);
+                    }
+                    return url; // It's already a Firebase URL
+                })
+            );
+
+            // Update the doc with final URLs
+            await updateDoc(docRef, { imageUrls: finalImageUrls });
+        };
+
+        uploadAndFinalize().catch(error => {
+            console.error("Background upload failed:", error);
+            // Optionally, show a toast to the user about the background failure
+            toast({
+                variant: "destructive",
+                title: "Image Upload Failed",
+                description: "Your item was posted, but there was an issue with the images."
+            });
+        });
 
     } catch (error: any) {
         console.error("Error posting item:", error);
@@ -193,7 +199,7 @@ export function SellForm() {
             title: 'Post Failed',
             description: `There was an error posting "${values.name}". Please try again.`,
         });
-        setIsSubmitting(false);
+        setIsSubmitting(false); // Only set to false on initial major error
     }
   }
   
