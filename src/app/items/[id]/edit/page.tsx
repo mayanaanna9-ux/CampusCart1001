@@ -128,7 +128,7 @@ export default function EditItemPage() {
             price: item.price,
             condition: item.condition,
             category: item.category,
-            imageUrls: item.imageUrls,
+            imageUrls: item.imageUrls || [],
             contactNumber: item.contactNumber || '',
             location: item.location || '',
             facebookProfileUrl: item.facebookProfileUrl || '',
@@ -223,12 +223,6 @@ export default function EditItemPage() {
         
           const docRef = doc(firestore, 'items', item.id);
           await updateDoc(docRef, itemData);
-
-          // Optional: A success toast on the destination page
-          // toast({
-          //   title: "Success!",
-          //   description: `${values.name} has been updated.`,
-          // });
 
       } catch (error: any) {
         console.error("Error updating item in background:", error);
@@ -474,3 +468,5 @@ export default function EditItemPage() {
     </div>
   );
 }
+
+    

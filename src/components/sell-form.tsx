@@ -187,12 +187,6 @@ export function SellForm() {
                 imageUrls: uploadedImageUrls 
             });
 
-            // The success toast is now optional, as the user is already on the home page
-            // toast({
-            //     title: "Success!",
-            //     description: `${values.name} has been posted.`,
-            // });
-
         } catch (error: any) {
             console.error("Error posting item in background:", error);
             // This toast will appear on the home page
@@ -443,3 +437,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
