@@ -13,20 +13,17 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
   const recommendationsFetched = useRef(false);
 
   useEffect(() => {
-    // Only run this effect if recommendations haven't been fetched yet and there are items to recommend.
     if (recommendationsFetched.current || allItems.length === 0) {
-        if (allItems.length === 0) {
-            setLoading(false);
-            setRecommendedItems([]);
-        }
+      if(allItems.length === 0 && loading) {
+        setLoading(false);
+      }
       return;
     }
+    
+    recommendationsFetched.current = true;
+    setLoading(true);
 
     const getRecommendations = async () => {
-      setLoading(true);
-      // Mark as fetched immediately to prevent re-fetching.
-      recommendationsFetched.current = true;
-      
       try {
         const availableItemsStr = JSON.stringify(allItems.map(i => ({ id: i.id, name: i.name, description: i.description })));
         const userHistoryStr = JSON.stringify(userHistoryData);
@@ -44,7 +41,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
         const filteredItems = allItems.filter(item => recommendedNames.includes(item.name.toLowerCase()));
         
         if (filteredItems.length > 0) {
-            setRecommendedItems(filteredItems.slice(0, 2)); // Show max 2 recommendations
+            setRecommendedItems(filteredItems.slice(0, 2));
         } else {
             // Fallback if AI returns no matches or junk
             const sortedByDate = [...allItems].sort((a, b) => {
@@ -71,9 +68,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
 
     getRecommendations();
 
-  // The dependency array is now correct. It only depends on the source data,
-  // but the `recommendationsFetched` ref ensures it only runs once.
-  }, [allItems, userHistoryData]);
+  }, [allItems, userHistoryData, loading]);
 
   if (loading) {
     return (
