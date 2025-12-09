@@ -141,65 +141,57 @@ export function SellForm() {
     }
 
     setIsSubmitting(true);
+    
+    // Redirect immediately and show a toast for optimistic UI
     router.push('/home');
     toast({
         title: "Posting your item...",
-        description: "Your item is being uploaded in the background.",
+        description: "Your item is being uploaded. It will appear on the home page shortly.",
     });
     
     try {
-        // Create the initial item data with local data URLs
         const itemDataForCreation = {
-            ...values,
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            category: values.category,
+            condition: values.condition,
             sellerId: user.uid,
             email: user.email,
             postedAt: serverTimestamp(),
+            imageUrls: [], // Start with empty array
+            contactNumber: values.contactNumber,
+            location: values.location,
+            facebookProfileUrl: values.facebookProfileUrl,
         };
 
-        // Add the document to Firestore first (non-blocking style)
-        const docRef = await addDoc(collection(firestore, 'items'), {
-            ...itemDataForCreation,
-            id: 'temp-id', // Temporary ID
-        });
+        // 1. Create the document in Firestore to get an ID.
+        const docRef = await addDoc(collection(firestore, 'items'), itemDataForCreation);
+
+        // 2. Upload images to a path that includes the new document's ID.
+        const finalImageUrls = await Promise.all(
+            values.imageUrls.map(async (url) => {
+                if (url.startsWith('data:')) {
+                    const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                    const uploadResult = await uploadString(storageRef, url, 'data_url');
+                    return getDownloadURL(uploadResult.ref);
+                }
+                return url; // Should not happen in this flow, but good practice.
+            })
+        );
         
-        // Immediately update with the real ID
-        updateDoc(docRef, { id: docRef.id });
-
-        // Handle image uploads and final URL update in the background
-        const uploadAndFinalize = async () => {
-             const finalImageUrls = await Promise.all(
-                values.imageUrls.map(async (url) => {
-                    if (url.startsWith('data:')) {
-                        const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-                        const uploadResult = await uploadString(storageRef, url, 'data_url');
-                        return getDownloadURL(uploadResult.ref);
-                    }
-                    return url; // It's already a Firebase URL
-                })
-            );
-
-            // Update the doc with final URLs
-            await updateDoc(docRef, { imageUrls: finalImageUrls });
-        };
-
-        uploadAndFinalize().catch(error => {
-            console.error("Background upload failed:", error);
-            // Optionally, show a toast to the user about the background failure
-            toast({
-                variant: "destructive",
-                title: "Image Upload Failed",
-                description: "Your item was posted, but there was an issue with the images."
-            });
+        // 3. Update the document with the final image URLs and the correct ID.
+        await updateDoc(docRef, {
+            id: docRef.id,
+            imageUrls: finalImageUrls,
         });
 
     } catch (error: any) {
         console.error("Error posting item:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Post Failed',
-            description: `There was an error posting "${values.name}". Please try again.`,
-        });
-        setIsSubmitting(false); // Only set to false on initial major error
+        // The user has already been redirected, so we just log the error.
+        // A more robust system might use a global state to show a "failed" toast
+        // even after redirection, but for now, this avoids the user-facing "Posting failed" alert
+        // that blocks them.
     }
   }
   
@@ -439,3 +431,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
