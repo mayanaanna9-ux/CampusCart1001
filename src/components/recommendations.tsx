@@ -13,15 +13,15 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
   const recommendationsFetched = useRef(false);
 
   useEffect(() => {
-    // Only run if we have items and haven't fetched recommendations yet.
-    if (recommendationsFetched.current || allItems.length === 0) {
-      if (allItems.length > 0 && loading) {
-        // If we have items but already fetched, just stop loading.
-        setLoading(false);
+    // Prevent fetching if we have no items or if we have already fetched.
+    if (!allItems || allItems.length === 0 || recommendationsFetched.current) {
+      if (loading && allItems && allItems.length > 0) {
+        setLoading(false); // Stop loading if we have items but have already fetched.
       }
       return;
     }
     
+    // Mark that we are about to fetch.
     recommendationsFetched.current = true;
     setLoading(true);
 
@@ -70,7 +70,7 @@ export function Recommendations({ allItems, userHistoryData }: { allItems: Item[
 
     getRecommendations();
 
-  }, [allItems, userHistoryData]);
+  }, [allItems, userHistoryData, loading]);
 
   if (loading) {
     return (
