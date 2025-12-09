@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, Suspense } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCart } from '@/context/cart-context';
 import { AppHeader } from '@/components/app-header';
@@ -122,6 +122,7 @@ function ItemPageComponent({ params }: ItemPageProps) {
         return;
     }
     setIsSendingNotification(true);
+    
     const notification: Omit<Notification, 'id'> = {
         recipientId: seller.id,
         senderId: currentUser.uid,
@@ -132,23 +133,36 @@ function ItemPageComponent({ params }: ItemPageProps) {
         createdAt: serverTimestamp(),
     };
 
-    try {
-        const notificationsCollection = collection(firestore, 'users', seller.id, 'notifications');
-        await addDoc(notificationsCollection, notification);
+    const notificationsCollection = collection(firestore, 'users', seller.id, 'notifications');
+    
+    // Non-blocking write with contextual error handling
+    addDoc(notificationsCollection, notification)
+      .then(() => {
         toast({
             title: 'Notification Sent!',
             description: `The seller has been notified that you want to buy "${item.name}".`,
         });
-    } catch (error) {
-         console.error('Error sending notification:', error);
-         toast({
+      })
+      .catch((serverError) => {
+        // Create and emit the detailed error for debugging.
+        const permissionError = new FirestorePermissionError({
+          path: notificationsCollection.path,
+          operation: 'create',
+          requestResourceData: notification,
+        } satisfies SecurityRuleContext);
+        
+        errorEmitter.emit('permission-error', permissionError);
+
+        // Also show a generic error toast to the user
+        toast({
             variant: 'destructive',
             title: 'Error',
             description: 'Could not send notification. Please try again.',
         });
-    } finally {
+      })
+      .finally(() => {
         setIsSendingNotification(false);
-    }
+      });
   }
 
 
@@ -354,3 +368,5 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   )
 }
+
+    
