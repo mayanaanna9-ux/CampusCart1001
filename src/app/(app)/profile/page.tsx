@@ -4,7 +4,7 @@
 import { UserAvatar } from '@/components/user-avatar';
 import { ItemCard } from '@/components/item-card';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
@@ -13,6 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useCart } from '@/context/cart-context';
+import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
 
 function ProfileSkeleton() {
   return (
@@ -28,7 +31,7 @@ function ProfileSkeleton() {
        <Tabs defaultValue="selling" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="selling">Selling (0)</TabsTrigger>
-          <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsTrigger value="cart">Cart</TabsTrigger>
         </TabsList>
         <TabsContent value="selling">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
@@ -56,6 +59,9 @@ export default function OwnProfilePage() {
   const { user: authUser, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const { cartItems, removeFromCart, clearCart } = useCart();
+
+  const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
 
   const profileUserId = authUser?.uid;
 
@@ -134,7 +140,7 @@ export default function OwnProfilePage() {
       <Tabs defaultValue="selling" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="selling">Selling ({userItems?.length || 0})</TabsTrigger>
-          <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsTrigger value="cart">Cart ({cartItems.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="selling">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
@@ -154,12 +160,66 @@ export default function OwnProfilePage() {
                 )}
             </div>
         </TabsContent>
-        <TabsContent value="favorites">
-            <div className="text-center py-12">
-                 <p className="text-muted-foreground">
-                    You have no favorited items.
-                </p>
-            </div>
+        <TabsContent value="cart">
+            {cartItems.length > 0 ? (
+                <div className="space-y-6 mt-6">
+                    <Card>
+                      <CardContent className="p-0">
+                        <div className="divide-y">
+                            {cartItems.map(item => (
+                                <div key={item.id} className="flex items-center p-4 gap-4">
+                                    <div className="relative h-16 w-16 rounded-md overflow-hidden bg-muted">
+                                        <Image 
+                                            src={item.imageUrls[0] || '/placeholder.svg'} 
+                                            alt={item.name} 
+                                            fill
+                                            sizes="64px"
+                                            className="object-cover" 
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <Link href={`/items/${item.id}`} className="font-semibold hover:underline">{item.name}</Link>
+                                        <p className="text-sm text-muted-foreground">{item.condition}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-lg text-primary">₱{item.price.toFixed(2)}</p>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => removeFromCart(item.id!)}>
+                                            <Trash2 className="h-4 w-4"/>
+                                            <span className="sr-only">Remove item</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <div className="space-y-4">
+                         <Card>
+                            <CardContent className="p-4 space-y-2">
+                                <div className="flex justify-between font-bold text-lg pt-2">
+                                    <span>Total</span>
+                                    <span>₱{subtotal.toFixed(2)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={clearCart} className="w-full">Clear Cart</Button>
+                            <Button asChild className="w-full">
+                                <Link href="/cart">Proceed to Checkout</Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+              ) : (
+                <div className="col-span-full text-center py-12">
+                     <p className="text-muted-foreground">
+                        Your cart is empty.
+                    </p>
+                    <Button variant="link" asChild>
+                        <Link href="/home">Start Shopping</Link>
+                    </Button>
+                </div>
+              )}
         </TabsContent>
       </Tabs>
     </div>
