@@ -28,7 +28,7 @@ export function AppHeader() {
   const { toast } = useToast();
 
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || user.isAnonymous) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
@@ -73,15 +73,7 @@ export function AppHeader() {
               <span className="sr-only">Browse</span>
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon" className="relative">
-            <Link href="/notifications">
-                {hasNotifications && (
-                    <span className="absolute bottom-2 left-2 block h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background"></span>
-                )}
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
-            </Link>
-          </Button>
+          
           {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted" />
           ) : user && auth ? (
