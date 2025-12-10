@@ -120,7 +120,8 @@ export default function EditItemPage() {
   useEffect(() => {
     if (item) {
         if (user && item.sellerId !== user.uid) {
-            return notFound();
+            notFound();
+            return;
         }
         form.reset({
             name: item.name,
@@ -475,3 +476,5 @@ export default function EditItemPage() {
     </div>
   );
 }
+
+    
