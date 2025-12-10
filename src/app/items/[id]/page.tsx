@@ -5,8 +5,8 @@ import { notFound, useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import type { Item, UserProfile, Notification } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import type { Item, UserProfile } from '@/lib/types';
 import {
   Carousel,
   CarouselContent,
@@ -16,14 +16,12 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ShoppingCart, Loader2, ArrowLeft, Heart, Mail, Phone, MapPin, Facebook, Send } from 'lucide-react';
+import { ShoppingCart, Loader2, ArrowLeft, Mail, Phone, MapPin, Facebook } from 'lucide-react';
 import { UserAvatar } from '@/components/user-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, Suspense } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCart } from '@/context/cart-context';
 import { AppHeader } from '@/components/app-header';
@@ -81,12 +79,10 @@ function ItemPageSkeleton() {
 }
 
 function ItemPageComponent({ params }: ItemPageProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser, loading: userLoading } = useUser();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isSendingNotification, setIsSendingNotification] = useState(false);
   const routeParams = useParams();
   const id = routeParams.id as string;
   const { addToCart } = useCart();
@@ -116,56 +112,6 @@ function ItemPageComponent({ params }: ItemPageProps) {
     notFound();
   }
   
-  const handleBuyItem = async () => {
-    if (!currentUser || !firestore || !item || !seller) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to buy an item.' });
-        return;
-    }
-    setIsSendingNotification(true);
-    
-    const notification: Omit<Notification, 'id'> = {
-        recipientId: seller.id,
-        senderId: currentUser.uid,
-        itemId: item.id!,
-        type: 'buy_now',
-        text: `wants to buy your item: ${item.name}`,
-        read: false,
-        createdAt: serverTimestamp(),
-    };
-
-    const notificationsCollection = collection(firestore, 'users', seller.id, 'notifications');
-    
-    // Non-blocking write with contextual error handling
-    addDoc(notificationsCollection, notification)
-      .then(() => {
-        toast({
-            title: 'Notification Sent!',
-            description: `The seller has been notified that you want to buy "${item.name}".`,
-        });
-      })
-      .catch((serverError) => {
-        // Create and emit the detailed error for debugging.
-        const permissionError = new FirestorePermissionError({
-          path: notificationsCollection.path,
-          operation: 'create',
-          requestResourceData: notification,
-        } satisfies SecurityRuleContext);
-        
-        errorEmitter.emit('permission-error', permissionError);
-
-        // Also show a generic error toast to the user
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not send notification. Please try again.',
-        });
-      })
-      .finally(() => {
-        setIsSendingNotification(false);
-      });
-  }
-
-
   const handleAddToCart = async () => {
     if (!currentUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
@@ -330,14 +276,6 @@ function ItemPageComponent({ params }: ItemPageProps) {
           <div className="space-y-2 pt-2">
              {currentUser?.uid !== seller?.id && (
                 <>
-                    <Button size="lg" className="w-full font-bold" onClick={handleBuyItem} disabled={isSendingNotification}>
-                         {isSendingNotification ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                         ) : (
-                            <Send className="mr-2 h-4 w-4" />
-                         )}
-                         Buy Item
-                    </Button>
                     <Button size="lg" variant="outline" className="w-full font-bold" onClick={handleAddToCart} disabled={isAddingToCart}>
                         {isAddingToCart ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -368,5 +306,3 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   )
 }
-
-    
