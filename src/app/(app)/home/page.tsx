@@ -2,10 +2,9 @@
 'use client';
 
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Item } from '@/lib/types';
-import { Recommendations } from '@/components/recommendations';
 import {
   Carousel,
   CarouselContent,
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui/carousel';
 import { FeaturedItemCard } from '@/components/featured-item-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { users, userHistory } from '@/lib/data'; // Keep for recommendations for now
+import { ItemCard } from '@/components/item-card';
 
 function HomeSkeleton() {
     return (
@@ -33,18 +32,15 @@ function HomeSkeleton() {
                 </div>
             </section>
              <section className="space-y-4 mt-8">
-                <h2 className="font-headline text-2xl font-bold">Recommended For You</h2>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Skeleton className="h-40 w-full" />
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-6 w-1/4" />
-                    </div>
-                    <div className="space-y-2">
-                        <Skeleton className="h-40 w-full" />
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-6 w-1/4" />
-                    </div>
+                <h2 className="font-headline text-2xl font-bold">All Items</h2>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="space-y-2">
+                            <Skeleton className="aspect-square w-full" />
+                            <Skeleton className="h-6 w-3/4 mt-2" />
+                            <Skeleton className="h-6 w-1/4" />
+                        </div>
+                    ))}
                 </div>
             </section>
         </div>
@@ -57,7 +53,7 @@ export default function HomePage() {
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'), limit(10));
+    return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'));
   }, [firestore]);
 
   const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
@@ -65,21 +61,23 @@ export default function HomePage() {
   if (itemsLoading) {
     return <HomeSkeleton />;
   }
+  
+  const latestItems = items?.slice(0, 5) || [];
 
   return (
     <div className="container mx-auto max-w-5xl p-4 md:p-6">
       <section className="mt-8 space-y-4">
         <h2 className="font-headline text-2xl font-bold">Latest Sales Today✨🔥</h2>
-        {items && items.length > 0 ? (
+        {latestItems && latestItems.length > 0 ? (
             <Carousel
                 opts={{
                     align: 'start',
-                    loop: items.length > 1,
+                    loop: latestItems.length > 1,
                 }}
                 className="w-full"
                 >
                 <CarouselContent>
-                    {items.map((item) => (
+                    {latestItems.map((item) => (
                         <CarouselItem key={item.id} className="md:basis-1/2 lg:basis-1/3">
                             <FeaturedItemCard item={item} />
                         </CarouselItem>
@@ -96,8 +94,16 @@ export default function HomePage() {
       </section>
       
       <section className="space-y-4 mt-8">
-        <h2 className="font-headline text-2xl font-bold">Recommended For You</h2>
-        <Recommendations allItems={items || []} userHistoryData={userHistory} />
+        <h2 className="font-headline text-2xl font-bold">All Items</h2>
+        {items && items.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {items.map(item => <ItemCard key={item.id} item={item} />)}
+            </div>
+        ) : (
+             <div className="flex items-center justify-center rounded-lg bg-muted/50 p-12">
+                <p className="text-muted-foreground">No items have been posted yet.</p>
+            </div>
+        )}
       </section>
 
     </div>
