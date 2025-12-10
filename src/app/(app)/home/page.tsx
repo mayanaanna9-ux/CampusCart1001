@@ -62,7 +62,15 @@ export default function HomePage() {
     return <HomeSkeleton />;
   }
   
-  const latestItems = items?.slice(0, 5) || [];
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+  const latestItems = items?.filter(item => {
+    if (!item.postedAt) return false;
+    const postedDate = (item.postedAt as any)?.toDate ? (item.postedAt as any).toDate() : new Date(item.postedAt);
+    return postedDate > twentyFourHoursAgo;
+  }) || [];
+
 
   return (
     <div className="container mx-auto max-w-5xl p-4 md:p-6">
