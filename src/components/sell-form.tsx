@@ -143,36 +143,56 @@ export function SellForm() {
     setIsSubmitting(true);
     toast({
         title: "Posting your item...",
-        description: "Please wait while we upload your item.",
+        description: "Your item is being posted in the background.",
     });
 
     try {
+      // 1. Create the document with text data first, to get an ID.
+      // We start with an empty imageUrls array.
       const docRef = await addDoc(collection(firestore, 'items'), {
         ...values,
         sellerId: user.uid,
         email: user.email,
         postedAt: serverTimestamp(),
+        postedDate: new Date().toISOString(),
         imageUrls: [], // Start with an empty array
       });
 
-      // Add the ID to the document
-      await updateDoc(docRef, { id: docRef.id });
-
-      const finalImageUrls = await Promise.all(
-        values.imageUrls.map(async (dataUrl) => {
-          const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
-          const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
-          return getDownloadURL(uploadResult.ref);
-        })
-      );
-
-      await updateDoc(docRef, { imageUrls: finalImageUrls });
-
-      toast({
-        title: 'Item Posted!',
-        description: `Your item "${values.name}" is now live.`,
-      });
+      // 2. Immediately navigate the user away.
       router.push('/home');
+
+      // 3. In the background, upload images and update the document.
+      const uploadAndSaveUrls = async () => {
+        try {
+            await updateDoc(docRef, { id: docRef.id });
+
+            const finalImageUrls = await Promise.all(
+                values.imageUrls.map(async (dataUrl) => {
+                const storageRef = ref(storage, `items/${user.uid}/${docRef.id}/${Date.now()}`);
+                const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+                return getDownloadURL(uploadResult.ref);
+                })
+            );
+
+            await updateDoc(docRef, { imageUrls: finalImageUrls });
+
+            // Optional: Show a success toast when uploads are complete
+            toast({
+                title: 'Upload Complete!',
+                description: `Images for "${values.name}" have been saved.`,
+            });
+        } catch (uploadError: any) {
+            console.error("Background image upload failed:", uploadError);
+            toast({
+                variant: 'destructive',
+                title: 'Image Upload Failed',
+                description: 'There was an error saving your images. You can try editing the item to re-upload them.',
+            });
+        }
+      };
+
+      // Fire off the background task.
+      uploadAndSaveUrls();
 
     } catch (error: any) {
         console.error("Error posting item:", error);
@@ -181,7 +201,7 @@ export function SellForm() {
           title: 'Posting Failed',
           description: error.message || 'There was an error posting your item. Please try again.',
         });
-        setIsSubmitting(false);
+        setIsSubmitting(false); // Only re-enable form if initial doc creation fails
     }
   }
   
@@ -421,3 +441,5 @@ export function SellForm() {
     </Card>
   );
 }
+
+    
