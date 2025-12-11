@@ -179,60 +179,56 @@ export default function EditItemPage() {
     }
 
     setIsSubmitting(true);
-    
-    router.push(`/items/${item.id}`);
     toast({
         title: "Updating your item...",
         description: "Your changes are being saved. This may take a moment.",
     });
 
     try {
-        // Optimistically update the UI with local data URLs first
         const docRef = doc(firestore, 'items', item.id);
-        await updateDoc(docRef, { ...values, updatedAt: serverTimestamp() });
 
-        // Then handle background tasks
-        const runAsyncOperations = async () => {
-            // Delete images marked for removal
-            await Promise.all(
-                removedImageUrls.map(url => {
-                    try {
-                        const imageRef = ref(storage, url);
-                        return deleteObject(imageRef);
-                    } catch (error) {
-                        console.warn("Invalid URL for deletion:", url, error);
-                        return Promise.resolve();
-                    }
-                })
-            );
-            
-            // Upload new images and get their final URLs
-            const finalImageUrls = await Promise.all(
-                values.imageUrls.map(async (url) => {
-                    if (url.startsWith('data:')) {
-                        const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
-                        const uploadResult = await uploadString(storageRef, url, 'data_url');
-                        return getDownloadURL(uploadResult.ref);
-                    }
-                    return url;
-                })
-            );
+        // Delete images marked for removal from Firebase Storage
+        await Promise.all(
+            removedImageUrls.map(url => {
+                try {
+                    const imageRef = ref(storage, url);
+                    return deleteObject(imageRef);
+                } catch (error) {
+                    console.warn("Invalid URL for deletion:", url, error);
+                    return Promise.resolve();
+                }
+            })
+        );
 
-            // Update the document again with the final, permanent URLs
-            await updateDoc(docRef, {
-                imageUrls: finalImageUrls,
-                updatedAt: serverTimestamp(),
-            });
-        };
+        // Separate new data URLs from existing storage URLs
+        const newDataUrls = values.imageUrls.filter(url => url.startsWith('data:'));
+        const existingUrls = values.imageUrls.filter(url => !url.startsWith('data:'));
+
+        // Upload new images and get their final URLs
+        const newUploadedUrls = await Promise.all(
+            newDataUrls.map(async (url) => {
+                const storageRef = ref(storage, `items/${user.uid}/${item.id}/${Date.now()}`);
+                const uploadResult = await uploadString(storageRef, url, 'data_url');
+                return getDownloadURL(uploadResult.ref);
+            })
+        );
+
+        // Combine existing URLs with newly uploaded URLs
+        const finalImageUrls = [...existingUrls, ...newUploadedUrls];
         
-        runAsyncOperations().catch(error => {
-            console.error("Error updating item in background:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Update Failed',
-                description: `There was a background error updating "${values.name}". Some changes might not have been saved.`,
-            });
+        // Update the document with all data and the final, permanent URLs
+        await updateDoc(docRef, {
+            ...values,
+            imageUrls: finalImageUrls,
+            updatedAt: serverTimestamp(),
         });
+        
+        toast({
+            title: 'Item Updated!',
+            description: `Your changes to "${values.name}" have been saved.`,
+        });
+
+        router.push(`/items/${item.id}`);
 
     } catch (error: any) {
         console.error("Error submitting item update:", error);
@@ -241,7 +237,7 @@ export default function EditItemPage() {
             title: 'Update Failed',
             description: `There was an error updating "${values.name}". Please try again.`,
         });
-        setIsSubmitting(false); // Only set to false on initial error
+        setIsSubmitting(false);
     }
   }
   
@@ -476,5 +472,7 @@ export default function EditItemPage() {
     </div>
   );
 }
+
+    
 
     
