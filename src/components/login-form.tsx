@@ -22,7 +22,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { useState } from 'react';
-import { handleUserCreation } from '@/lib/user-creation';
 import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -56,7 +55,6 @@ export function LoginForm() {
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      await handleUserCreation(userCredential, firestore);
       toast({
         title: "Logged in successfully!",
       });
@@ -97,8 +95,7 @@ export function LoginForm() {
         return;
       }
       try {
-        const userCredential = await signInAnonymously(auth);
-        await handleUserCreation(userCredential, firestore);
+        await signInAnonymously(auth);
         toast({
           title: "Signed in as guest!",
         });
