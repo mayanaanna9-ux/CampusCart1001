@@ -15,10 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { updateProfile, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } from 'firebase/auth';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
@@ -175,8 +174,11 @@ export default function EditProfilePage() {
         return;
     }
     
-    router.push('/profile');
-
+    toast({
+        title: "Updating profile...",
+        description: "Your changes are being saved.",
+    });
+    
     const user = auth.currentUser;
     const { displayName, username, bio, location, contactNumber } = values;
     let profilePictureUrl = values.profilePictureUrl || '';
@@ -201,33 +203,29 @@ export default function EditProfilePage() {
         }
 
         if (isNewImageUpload) {
-            profileData.profilePictureUrl = newlyUploadedUrl;
-            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
-
             const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-            uploadString(storageRef, newlyUploadedUrl, 'data_url')
-                .then(snapshot => getDownloadURL(snapshot.ref))
-                .then(downloadURL => {
-                    if (auth.currentUser) {
-                         updateProfile(auth.currentUser, { photoURL: downloadURL });
-                         setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
-                    }
-                })
-                .catch(error => {
-                    console.error("Image upload failed:", error);
-                    toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Your profile was saved, but the new image failed to upload.' });
-                });
+            const snapshot = await uploadString(storageRef, newlyUploadedUrl, 'data_url');
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            profileData.profilePictureUrl = downloadURL;
+            await updateProfile(user, { photoURL: downloadURL });
 
         } else {
             profilePictureUrl = form.getValues('profilePictureUrl') || '';
             profileData.profilePictureUrl = profilePictureUrl;
-            
-            setDocumentNonBlocking(userDocRef, profileData, { merge: true });
-            
             if (profilePictureUrl !== user.photoURL) {
                 await updateProfile(user, { photoURL: profilePictureUrl });
             }
         }
+        
+        await setDoc(userDocRef, profileData, { merge: true });
+
+        toast({
+            title: "Profile Updated!",
+            description: "Your changes have been saved successfully.",
+        });
+
+        router.push('/profile');
+
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -246,26 +244,14 @@ export default function EditProfilePage() {
     const user = auth.currentUser;
     
     try {
+        await deleteDoc(doc(firestore, 'users', user.uid));
         await deleteUser(user);
+
         toast({
-          title: 'Account Deletion Initiated',
-          description: 'Your account is being deleted. This may take a moment.',
+            title: 'Account Deleted',
+            description: 'Your Campus Cart account has been permanently deleted.',
         });
-        const userDocRef = doc(firestore, 'users', user.uid);
-        deleteDoc(userDocRef).then(() => {
-             toast({
-                title: 'Account Deleted',
-                description: 'Your Campus Cart account has been permanently deleted.',
-            });
-            router.push('/');
-        }).catch(error => {
-             console.error("Firestore document deletion failed, it may be orphaned:", error);
-             toast({
-                title: 'Account Data Cleanup Failed',
-                description: 'Your account has been deleted, but some data may remain.',
-            });
-             router.push('/');
-        });
+        router.push('/');
 
     } catch (error: any) {
        if (error.code === 'auth/requires-recent-login') {

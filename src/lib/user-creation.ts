@@ -1,7 +1,6 @@
 
-import { doc, serverTimestamp, Firestore } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, Firestore } from 'firebase/firestore';
 import { updateProfile, type UserCredential } from 'firebase/auth';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 
 /**
@@ -37,6 +36,7 @@ export const handleUserCreation = async (
     location: location || '',
     contactNumber: contactNumber || '',
   };
+  
   // Use the authenticated user's UID for the document reference.
-  setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+  await setDoc(userDocRef, userProfile, { merge: true });
 };

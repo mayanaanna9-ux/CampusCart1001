@@ -11,12 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { useAuth, useStorage } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
+import { setDoc, doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
@@ -28,7 +27,7 @@ export function AvatarGrid() {
   const { toast } = useToast();
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
 
 
@@ -61,51 +60,43 @@ export function AvatarGrid() {
       return;
     }
     
-    router.push('/home');
+    setIsSubmitting(true);
+    toast({ title: "Setting up your profile..."});
     
     const user = auth.currentUser;
     const isNewImageUpload = selectedAvatarUrl.startsWith('data:');
+    let finalProfilePictureUrl = selectedAvatarUrl;
 
-    const userProfileData = {
-        id: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email,
-        profilePictureUrl: selectedAvatarUrl,
-    };
-    const userDocRef = doc(firestore, 'users', user.uid);
-    
-    setDocumentNonBlocking(userDocRef, userProfileData, { merge: true });
+    try {
+        if (isNewImageUpload && storage) {
+            const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
+            const uploadTask = await uploadString(storageRef, selectedAvatarUrl, 'data_url');
+            finalProfilePictureUrl = await getDownloadURL(uploadTask.ref);
+        }
 
-    if (!isNewImageUpload) {
-        updateProfile(user, { photoURL: selectedAvatarUrl }).catch(error => {
-             toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: error.message || 'Could not update profile picture.',
-            });
-        });
-        return;
-    }
+        await updateProfile(user, { photoURL: finalProfilePictureUrl });
 
-    if (isNewImageUpload && storage) {
-        setIsUploading(true);
-        const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
+        const userProfileData = {
+            id: user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email,
+            profilePictureUrl: finalProfilePictureUrl,
+        };
+        const userDocRef = doc(firestore, 'users', user.uid);
         
-        uploadString(storageRef, selectedAvatarUrl, 'data_url')
-          .then(uploadTask => getDownloadURL(uploadTask.ref))
-          .then(downloadURL => {
-              if (auth.currentUser) {
-                  // Only update Auth profile after getting the final storage URL
-                  updateProfile(auth.currentUser, { photoURL: downloadURL });
-                  setDocumentNonBlocking(userDocRef, { profilePictureUrl: downloadURL }, { merge: true });
-              }
-          })
-          .catch(error => {
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload image.' });
-          })
-          .finally(() => {
-            setIsUploading(false);
-          });
+        await setDoc(userDocRef, userProfileData, { merge: true });
+
+        toast({ title: "Profile setup complete!"});
+        router.push('/home');
+
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Uh oh! Something went wrong.',
+            description: error.message || 'Could not update profile picture.',
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -125,6 +116,7 @@ export function AvatarGrid() {
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
                       selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
                     )}
+                    disabled={isSubmitting}
                   >
                     <Image
                       src={avatar.imageUrl}
@@ -155,17 +147,18 @@ export function AvatarGrid() {
                 )}
                 <div className="flex justify-center">
                     <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
-                        <Button asChild variant="destructive" className="w-full" disabled={isUploading}>
+                        <Button asChild variant="destructive" className="w-full" disabled={isSubmitting}>
                             <div className='w-full text-center'>
                                 {'Upload Image'}
-                                <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isUploading} />
+                                <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isSubmitting} />
                             </div>
                         </Button>
                     </Label>
                 </div>
             </div>
 
-            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isUploading}>
+            <Button onClick={handleContinue} className="w-full font-bold" size="lg" disabled={!selectedAvatarUrl || isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Continue
             </Button>
           </div>

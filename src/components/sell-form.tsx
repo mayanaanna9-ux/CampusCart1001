@@ -421,7 +421,3 @@ export function SellForm() {
     </Card>
   );
 }
-
-    
-
-    
