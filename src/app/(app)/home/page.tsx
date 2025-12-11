@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Item } from '@/lib/types';
 import {
@@ -55,22 +55,20 @@ export default function HomePage() {
     if (!firestore) return null;
     return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'));
   }, [firestore]);
+  
+  const latestItemsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'items'), orderBy('postedAt', 'desc'), limit(6));
+  }, [firestore]);
 
   const { data: items, isLoading: itemsLoading } = useCollection<Item>(itemsQuery);
+  const { data: latestItems, isLoading: latestItemsLoading } = useCollection<Item>(latestItemsQuery);
 
-  if (itemsLoading) {
+  const isLoading = itemsLoading || latestItemsLoading;
+
+  if (isLoading) {
     return <HomeSkeleton />;
   }
-  
-  const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-
-  const latestItems = items?.filter(item => {
-    if (!item.postedAt) return false;
-    const postedDate = (item.postedAt as any)?.toDate ? (item.postedAt as any).toDate() : new Date(item.postedAt);
-    return postedDate > twentyFourHoursAgo;
-  }) || [];
-
 
   return (
     <div className="container mx-auto max-w-5xl p-4 md:p-6">
