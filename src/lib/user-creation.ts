@@ -1,5 +1,5 @@
 
-import { doc, getDoc, serverTimestamp, Firestore } from 'firebase/firestore';
+import { doc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { updateProfile, type UserCredential } from 'firebase/auth';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
@@ -10,10 +10,10 @@ import type { UserProfile } from '@/lib/types';
 export const handleUserCreation = async (
   userCredential: UserCredential, 
   firestore: Firestore,
-  name?: string | null, 
-  username?: string | null,
-  location?: string | null,
-  contactNumber?: string | null
+  name?: string, 
+  username?: string,
+  location?: string,
+  contactNumber?: string
 ) => {
   const user = userCredential.user;
   const userDocRef = doc(firestore, 'users', user.uid);
@@ -26,32 +26,17 @@ export const handleUserCreation = async (
     await updateProfile(user, { displayName });
   }
 
-  // Check if the document already exists to avoid overwriting username on login.
-  const docSnap = await getDoc(userDocRef);
-  if (docSnap.exists()) {
-    // On login, just ensure the basic info is there but don't overwrite existing fields.
-    const existingData = docSnap.data();
-    const profileData: Partial<UserProfile> = {
-      id: user.uid,
-      email: user.email,
-      displayName: displayName || existingData.displayName,
-      profilePictureUrl: user.photoURL || existingData.profilePictureUrl || '',
-    };
-    // Important: Use the authenticated user's UID for the document reference.
-    setDocumentNonBlocking(doc(firestore, 'users', user.uid), profileData, { merge: true });
-  } else {
-    // On sign-up, create the full document for the new user.
-    const userProfile: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
-      id: user.uid,
-      email: user.email,
-      displayName: displayName || '',
-      username: username || '',
-      profilePictureUrl: user.photoURL || '',
-      createdAt: serverTimestamp(),
-      location: location || '',
-      contactNumber: contactNumber || '',
-    };
-    // Important: Use the authenticated user's UID for the document reference.
-    setDocumentNonBlocking(doc(firestore, 'users', user.uid), userProfile, { merge: true });
-  }
+  // On sign-up, create the full document for the new user.
+  const userProfile: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
+    id: user.uid,
+    email: user.email,
+    displayName: displayName || '',
+    username: username || '',
+    profilePictureUrl: user.photoURL || '',
+    createdAt: serverTimestamp(),
+    location: location || '',
+    contactNumber: contactNumber || '',
+  };
+  // Use the authenticated user's UID for the document reference.
+  setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 };
