@@ -21,7 +21,7 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import type { UserProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { Upload, ArrowLeft } from 'lucide-react';
+import { Upload, ArrowLeft, AlertCircle, UserPlus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -36,6 +36,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -92,6 +94,7 @@ export default function EditProfilePage() {
   const [newlyUploadedUrl, setNewlyUploadedUrl] = useState<string | null>(null);
   const [showReauthDialog, setShowReauthDialog] = useState(false);
 
+  const isGuest = authUser?.isAnonymous;
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !authUser) return null;
@@ -154,7 +157,7 @@ export default function EditProfilePage() {
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!authUser || !storage) return;
+    if (!authUser || !storage || isGuest) return;
 
     const file = event.target.files?.[0];
     if (file) {
@@ -196,6 +199,15 @@ export default function EditProfilePage() {
     };
     
     const isNewImageUpload = newlyUploadedUrl && newlyUploadedUrl.startsWith('data:');
+
+    if (isGuest && isNewImageUpload) {
+        toast({
+            variant: 'destructive',
+            title: 'Action Not Allowed',
+            description: 'Guest users cannot upload custom profile pictures. Please select an avatar or create an account.',
+        });
+        return;
+    }
 
     try {
         if (displayName !== user.displayName) {
@@ -325,13 +337,15 @@ export default function EditProfilePage() {
                 <Label>Profile Picture</Label>
                 <div className="flex items-start gap-4">
                     <div className="relative">
-                        <Label htmlFor="picture-upload" className="cursor-pointer">
+                        <Label htmlFor="picture-upload" className={cn(isGuest ? 'cursor-not-allowed' : 'cursor-pointer')}>
                             <Image src={currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
-                                <Upload className="h-6 w-6 text-white" />
-                            </div>
+                             {!isGuest && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                                    <Upload className="h-6 w-6 text-white" />
+                                </div>
+                             )}
                         </Label>
-                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
+                        <Input id="picture-upload" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} disabled={isGuest} />
                     </div>
                     
                     <div className="flex-1 space-y-4">
@@ -367,16 +381,31 @@ export default function EditProfilePage() {
                             </div>
                         </div>
 
-                        <div className="flex justify-center">
-                            <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
-                                <Button asChild variant="destructive" className="w-full">
-                                    <div className='w-full text-center'>
-                                        {'Upload Image'}
-                                        <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
-                                    </div>
-                                </Button>
-                            </Label>
-                        </div> 
+                        {isGuest ? (
+                            <Alert variant="destructive" className="bg-destructive/10 border-destructive/50 text-destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Account Required</AlertTitle>
+                                <AlertDescription>
+                                    Want to upload your own picture?
+                                    <Button variant="link" asChild className="p-1 h-auto text-destructive">
+                                        <Link href="/signup">
+                                            Create a full account.
+                                        </Link>
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        ) : (
+                            <div className="flex justify-center">
+                                <Label htmlFor="picture-upload-btn" className="w-full max-w-xs">
+                                    <Button asChild variant="destructive" className="w-full">
+                                        <div className='w-full text-center'>
+                                            {'Upload Image'}
+                                            <Input id="picture-upload-btn" type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
+                                        </div>
+                                    </Button>
+                                </Label>
+                            </div> 
+                        )}
                     </div>
                 </div>
               </div>
@@ -465,7 +494,7 @@ export default function EditProfilePage() {
                  </p>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive">Delete Account</Button>
+                        <Button variant="destructive" disabled={isGuest}>Delete Account</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
