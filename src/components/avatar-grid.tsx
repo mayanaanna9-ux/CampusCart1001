@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Upload, Loader2, UserPlus, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth, useStorage } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -40,7 +40,7 @@ export function AvatarGrid() {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-     if (!auth?.currentUser || !storage) return;
+     if (!auth?.currentUser || !storage || isGuest) return;
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -74,7 +74,7 @@ export function AvatarGrid() {
         toast({
             variant: 'destructive',
             title: 'Action Not Allowed',
-            description: 'Guest users cannot upload custom profile pictures. Please select an avatar or create an account.',
+            description: 'Guest users cannot upload custom profile pictures. Please select an avatar.',
         });
         setIsSubmitting(false);
         return;
@@ -94,6 +94,7 @@ export function AvatarGrid() {
             email: user.email,
             displayName: user.displayName || user.email,
             profilePictureUrl: finalProfilePictureUrl,
+            createdAt: serverTimestamp(),
         };
         const userDocRef = doc(firestore, 'users', user.uid);
         
