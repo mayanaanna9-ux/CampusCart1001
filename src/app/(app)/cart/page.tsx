@@ -67,7 +67,6 @@ export default function CartPage() {
                 </Card>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={clearCart} className="w-full">Clear Cart</Button>
-                    <Button className="w-full">Proceed to Checkout</Button>
                 </div>
             </div>
         </div>
