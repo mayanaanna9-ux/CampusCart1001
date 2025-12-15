@@ -15,11 +15,12 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth, useStorage } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { setDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import Link from 'next/link';
+import { useProfilePicture } from '@/context/profile-picture-context';
 
 export function AvatarGrid() {
   const router = useRouter();
@@ -30,13 +31,15 @@ export function AvatarGrid() {
   const avatars = PlaceHolderImages.filter(p => p.id.startsWith('avatar'));
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+  
+  const { setOptimisticProfilePicture, setFinalProfilePicture } = useProfilePicture();
+
 
   const isGuest = auth?.currentUser?.isAnonymous;
 
-  const handleAvatarSelect = (url: string) => {
+  const handleSelect = (url: string) => {
     setSelectedAvatarUrl(url);
-    setUploadedImagePreview(null);
+    setOptimisticProfilePicture(url);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,8 +49,7 @@ export function AvatarGrid() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setUploadedImagePreview(dataUrl); // Show preview in the upload box
-        setSelectedAvatarUrl(dataUrl); // Select the uploaded image
+        handleSelect(dataUrl);
       };
       reader.readAsDataURL(file);
     }
@@ -68,7 +70,6 @@ export function AvatarGrid() {
     
     const user = auth.currentUser;
     const isNewImageUpload = selectedAvatarUrl.startsWith('data:');
-    let finalProfilePictureUrl = selectedAvatarUrl;
 
     if (isGuest && isNewImageUpload) {
         toast({
@@ -81,38 +82,64 @@ export function AvatarGrid() {
     }
 
     try {
-        if (isNewImageUpload && storage) {
-            const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-            const uploadTask = await uploadString(storageRef, selectedAvatarUrl, 'data_url');
-            finalProfilePictureUrl = await getDownloadURL(uploadTask.ref);
-        }
-
-        await updateProfile(user, { photoURL: finalProfilePictureUrl });
-
-        const userProfileData = {
+        const userProfileData: { [key: string]: any } = {
             id: user.uid,
             email: user.email,
             displayName: user.displayName || user.email,
-            profilePictureUrl: finalProfilePictureUrl,
             createdAt: serverTimestamp(),
         };
-        const userDocRef = doc(firestore, 'users', user.uid);
-        
-        await setDoc(userDocRef, userProfileData, { merge: true });
 
-        toast({ title: "Profile setup complete!"});
+        if (!isNewImageUpload) {
+            userProfileData.profilePictureUrl = selectedAvatarUrl;
+        }
+        
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, userProfileData, { merge: true });
+        
+        if (!isNewImageUpload) {
+            await updateProfile(user, { photoURL: selectedAvatarUrl });
+        }
+
         router.push('/home');
 
+        if (isNewImageUpload && storage) {
+            const uploadAndSaveUrl = async () => {
+                try {
+                    const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
+                    const uploadTask = await uploadString(storageRef, selectedAvatarUrl, 'data_url');
+                    const finalProfilePictureUrl = await getDownloadURL(uploadTask.ref);
+
+                    await updateProfile(user, { photoURL: finalProfilePictureUrl });
+                    await updateDoc(userDocRef, { profilePictureUrl: finalProfilePictureUrl });
+                    
+                    setFinalProfilePicture(finalProfilePictureUrl);
+                    toast({ title: "Profile picture uploaded!", description: "Your new picture has been saved." });
+                } catch (uploadError: any) {
+                    setOptimisticProfilePicture(null);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Upload Failed',
+                        description: 'Your profile picture could not be saved. Please try again from the edit profile page.',
+                    });
+                }
+            };
+            uploadAndSaveUrl();
+        } else {
+            setIsSubmitting(false);
+        }
+
     } catch (error: any) {
+        setIsSubmitting(false);
+        setOptimisticProfilePicture(null);
         toast({
             variant: 'destructive',
             title: 'Uh oh! Something went wrong.',
-            description: error.message || 'Could not update profile picture.',
+            description: error.message || 'Could not update profile.',
         });
-    } finally {
-        setIsSubmitting(false);
     }
   };
+  
+  const uploadedImagePreview = selectedAvatarUrl && selectedAvatarUrl.startsWith('data:') ? selectedAvatarUrl : null;
 
   return (
     <div className="w-full max-w-2xl">
@@ -125,7 +152,7 @@ export function AvatarGrid() {
                 {avatars.map((avatar) => (
                   <button
                     key={avatar.id}
-                    onClick={() => handleAvatarSelect(avatar.imageUrl)}
+                    onClick={() => handleSelect(avatar.imageUrl)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
                       selectedAvatarUrl === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
