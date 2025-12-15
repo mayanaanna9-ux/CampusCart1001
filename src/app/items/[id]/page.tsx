@@ -32,6 +32,8 @@ type ItemPageProps = {
   params: { id: string };
 };
 
+export const dynamic = 'force-dynamic';
+
 function ItemPageSkeleton() {
     return (
         <div className="container mx-auto max-w-4xl p-4 md:p-6">
@@ -306,3 +308,5 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   )
 }
+
+    
