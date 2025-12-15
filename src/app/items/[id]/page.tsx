@@ -218,7 +218,7 @@ function ItemPageComponent({ params }: ItemPageProps) {
                 <Card className="transition-all hover:shadow-md hover:bg-muted/50">
                     <CardContent className="p-4 flex items-center justify-between">
                         <Link href={`/profile/${seller.id}`} className="flex items-center gap-3">
-                            <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-12 w-12" />
+                            <UserAvatar userId={seller.id} name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-12 w-12" />
                             <div>
                                 <p className="font-semibold">{seller.displayName}</p>
                                 <p className="text-sm text-muted-foreground">Seller</p>
@@ -308,5 +308,3 @@ export default function ItemPage({ params }: ItemPageProps) {
     </div>
   )
 }
-
-    

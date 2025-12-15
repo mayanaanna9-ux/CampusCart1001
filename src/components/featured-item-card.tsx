@@ -155,7 +155,7 @@ export function FeaturedItemCard({ item }: FeaturedItemCardProps) {
                           </div>
                       ) : seller && (
                           <Link href={`/profile/${seller.id}`} className="flex items-center gap-2">
-                              <UserAvatar name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
+                              <UserAvatar userId={seller.id} name={seller.displayName} avatarUrl={seller.profilePictureUrl || ''} className="h-6 w-6" />
                               <span className="text-sm font-medium text-muted-foreground hover:underline">{seller.displayName}</span>
                           </Link>
                       )}
