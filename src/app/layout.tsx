@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { CartProvider } from '@/context/cart-context';
+import { ProfilePictureProvider } from '@/context/profile-picture-context';
 
 export const metadata: Metadata = {
   title: 'Campus Cart',
@@ -23,9 +24,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          <ProfilePictureProvider>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </ProfilePictureProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

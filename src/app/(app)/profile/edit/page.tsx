@@ -38,6 +38,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
+import { useProfilePicture } from '@/context/profile-picture-context';
 
 const formSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -92,7 +93,9 @@ export default function EditProfilePage() {
   const { user: authUser, loading: userLoading } = useUser();
   const [showReauthDialog, setShowReauthDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
+
+  const { optimisticProfilePicture, setOptimisticProfilePicture, setFinalProfilePicture } = useProfilePicture();
+
 
   const isGuest = authUser?.isAnonymous;
 
@@ -127,16 +130,20 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (userProfile || authUser) {
+      const profilePictureUrl = userProfile?.profilePictureUrl || authUser?.photoURL || '';
       form.reset({
         displayName: userProfile?.displayName || authUser?.displayName || '',
         username: userProfile?.username || '',
         bio: userProfile?.bio || '',
-        profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || '',
+        profilePictureUrl: profilePictureUrl,
         location: userProfile?.location || '',
         contactNumber: userProfile?.contactNumber || '',
       });
+      if (profilePictureUrl) {
+        setFinalProfilePicture(profilePictureUrl);
+      }
     }
-  }, [userProfile, authUser, form]);
+  }, [userProfile, authUser, form, setFinalProfilePicture]);
 
 
   if (isLoading || !authUser) {
@@ -147,7 +154,7 @@ export default function EditProfilePage() {
 
   const handleAvatarSelect = (url: string) => {
     form.setValue('profilePictureUrl', url, { shouldValidate: true, shouldDirty: true });
-    setLocalImagePreview(null);
+    setOptimisticProfilePicture(url);
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,7 +165,7 @@ export default function EditProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setLocalImagePreview(dataUrl);
+        setOptimisticProfilePicture(dataUrl);
         // Set a value to make the form dirty and enable the save button
         form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
       };
@@ -180,7 +187,7 @@ export default function EditProfilePage() {
     
     const user = auth.currentUser;
     const { displayName, username, bio, location, contactNumber } = values;
-    const isNewImageUpload = localImagePreview && localImagePreview.startsWith('data:');
+    const isNewImageUpload = optimisticProfilePicture && optimisticProfilePicture.startsWith('data:');
 
     if (isGuest && isNewImageUpload) {
         toast({
@@ -193,7 +200,6 @@ export default function EditProfilePage() {
     }
 
     try {
-        // Prepare text-based data for an immediate update.
         const profileData: Partial<UserProfile> = {
             displayName,
             username,
@@ -202,42 +208,41 @@ export default function EditProfilePage() {
             contactNumber,
         };
 
-        // If an avatar from the list is selected (not a new upload), update it now.
-        if (!isNewImageUpload && values.profilePictureUrl) {
-            profileData.profilePictureUrl = values.profilePictureUrl;
-            await updateProfile(user, { photoURL: values.profilePictureUrl });
+        if (optimisticProfilePicture && !isNewImageUpload) {
+            profileData.profilePictureUrl = optimisticProfilePicture;
+            setFinalProfilePicture(optimisticProfilePicture);
+            await updateProfile(user, { photoURL: optimisticProfilePicture });
         }
 
-        // Update Auth display name and Firestore document with text data immediately.
         await updateProfile(user, { displayName });
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, profileData, { merge: true });
 
-        // Navigate away immediately.
         router.push('/profile');
         toast({
             title: "Profile Updated!",
             description: "Your changes have been saved. Image is uploading in the background.",
         });
 
-        // --- Background Image Upload ---
         if (isNewImageUpload) {
             const uploadAndUpdateUrl = async () => {
                 try {
                     const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-                    const snapshot = await uploadString(storageRef, localImagePreview, 'data_url');
+                    const snapshot = await uploadString(storageRef, optimisticProfilePicture, 'data_url');
                     const finalUrl = await getDownloadURL(snapshot.ref);
 
-                    // Update Auth and Firestore with the final URL.
                     await updateProfile(user, { photoURL: finalUrl });
                     await updateDoc(userDocRef, { profilePictureUrl: finalUrl });
                     
+                    setFinalProfilePicture(finalUrl);
+
                     toast({
                       title: 'Upload Complete!',
                       description: 'Your new profile picture is saved.',
                     });
 
                 } catch (error: any) {
+                    setOptimisticProfilePicture(null); // Clear optimistic on failure
                     toast({
                         variant: 'destructive',
                         title: 'Image Upload Failed',
@@ -245,7 +250,6 @@ export default function EditProfilePage() {
                     });
                 }
             };
-            // Execute the background task.
             uploadAndUpdateUrl();
         } else {
              setIsSubmitting(false);
@@ -253,6 +257,7 @@ export default function EditProfilePage() {
 
     } catch (error: any) {
         setIsSubmitting(false);
+        setOptimisticProfilePicture(null);
         toast({
             variant: 'destructive',
             title: 'Update Failed',
@@ -333,6 +338,8 @@ export default function EditProfilePage() {
 
   const isSaveDisabled = !form.formState.isDirty || isSubmitting;
   const isEmailProvider = authUser?.providerData.some(p => p.providerId === 'password');
+  
+  const displayImage = optimisticProfilePicture || currentPhotoURL || '/avatar_placeholder.png';
 
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
@@ -352,7 +359,7 @@ export default function EditProfilePage() {
                 <div className="flex items-start gap-4">
                     <div className="relative">
                         <Label htmlFor="picture-upload" className={cn(isGuest ? 'cursor-not-allowed' : 'cursor-pointer')}>
-                            <Image src={localImagePreview || currentPhotoURL || '/avatar_placeholder.png'} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
+                            <Image src={displayImage} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full border-4 border-card object-cover" />
                              {!isGuest && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
                                     <Upload className="h-6 w-6 text-white" />
@@ -371,7 +378,7 @@ export default function EditProfilePage() {
                                 onClick={() => handleAvatarSelect(avatar.imageUrl)}
                                 className={cn(
                                 'relative aspect-square overflow-hidden rounded-full border-4 transition-all',
-                                currentPhotoURL === avatar.imageUrl && !localImagePreview ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
+                                optimisticProfilePicture === avatar.imageUrl ? 'border-primary scale-110' : 'border-transparent hover:border-primary/50'
                                 )}
                             >
                                 <Image
