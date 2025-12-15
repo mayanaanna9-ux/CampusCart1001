@@ -21,7 +21,7 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import type { UserProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { Upload, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Upload, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -91,6 +91,7 @@ export default function EditProfilePage() {
   const storage = useStorage();
   const { user: authUser, loading: userLoading } = useUser();
   const [showReauthDialog, setShowReauthDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
 
   const isGuest = authUser?.isAnonymous;
@@ -126,22 +127,16 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (userProfile || authUser) {
-      const initialPhotoUrl = userProfile?.profilePictureUrl || authUser?.photoURL || '';
       form.reset({
         displayName: userProfile?.displayName || authUser?.displayName || '',
         username: userProfile?.username || '',
         bio: userProfile?.bio || '',
-        profilePictureUrl: initialPhotoUrl,
+        profilePictureUrl: userProfile?.profilePictureUrl || authUser?.photoURL || '',
         location: userProfile?.location || '',
         contactNumber: userProfile?.contactNumber || '',
       });
-       if(localImagePreview) {
-         form.setValue('profilePictureUrl', localImagePreview, { shouldDirty: true });
-       } else {
-         form.setValue('profilePictureUrl', initialPhotoUrl);
-       }
     }
-  }, [userProfile, authUser, form, localImagePreview]);
+  }, [userProfile, authUser, form]);
 
 
   if (isLoading || !authUser) {
@@ -164,6 +159,8 @@ export default function EditProfilePage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setLocalImagePreview(dataUrl);
+        // Set a value to make the form dirty and enable the save button
+        form.setValue('profilePictureUrl', dataUrl, { shouldValidate: true, shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
@@ -174,16 +171,15 @@ export default function EditProfilePage() {
         toast({ variant: 'destructive', title: 'Error', description: 'Authentication not ready.' });
         return;
     }
-    
+
+    setIsSubmitting(true);
     toast({
         title: "Updating profile...",
         description: "Your changes are being saved.",
     });
     
     const user = auth.currentUser;
-    let { displayName, username, bio, location, contactNumber } = values;
-    let profilePictureUrl = values.profilePictureUrl || '';
-
+    const { displayName, username, bio, location, contactNumber } = values;
     const isNewImageUpload = localImagePreview && localImagePreview.startsWith('data:');
 
     if (isGuest && isNewImageUpload) {
@@ -192,51 +188,71 @@ export default function EditProfilePage() {
             title: 'Action Not Allowed',
             description: 'Guest users cannot upload custom profile pictures. Please select an avatar or create an account.',
         });
+        setIsSubmitting(false);
         return;
-    }
-    
-    // First, handle the image upload if a new one was selected.
-    if (isNewImageUpload) {
-        try {
-            const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
-            const snapshot = await uploadString(storageRef, localImagePreview, 'data_url');
-            profilePictureUrl = await getDownloadURL(snapshot.ref);
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Image Upload Failed',
-                description: error.message || 'Could not upload your new profile picture.',
-            });
-            return; // Stop if image upload fails
-        }
     }
 
     try {
-        // Now, prepare and save all data (text and the final image URL).
-        const userDocRef = doc(firestore, 'users', user.uid);
-        
+        // Prepare text-based data for an immediate update.
         const profileData: Partial<UserProfile> = {
-            id: user.uid,
-            email: user.email,
             displayName,
             username,
             bio,
             location,
             contactNumber,
-            profilePictureUrl,
         };
 
-        await updateProfile(user, { displayName, photoURL: profilePictureUrl });
+        // If an avatar from the list is selected (not a new upload), update it now.
+        if (!isNewImageUpload && values.profilePictureUrl) {
+            profileData.profilePictureUrl = values.profilePictureUrl;
+            await updateProfile(user, { photoURL: values.profilePictureUrl });
+        }
+
+        // Update Auth display name and Firestore document with text data immediately.
+        await updateProfile(user, { displayName });
+        const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, profileData, { merge: true });
 
+        // Navigate away immediately.
+        router.push('/profile');
         toast({
             title: "Profile Updated!",
-            description: "Your changes have been saved successfully.",
+            description: "Your changes have been saved. Image is uploading in the background.",
         });
 
-        router.push('/profile');
+        // --- Background Image Upload ---
+        if (isNewImageUpload) {
+            const uploadAndUpdateUrl = async () => {
+                try {
+                    const storageRef = ref(storage, `profile-pictures/${user.uid}/${Date.now()}`);
+                    const snapshot = await uploadString(storageRef, localImagePreview, 'data_url');
+                    const finalUrl = await getDownloadURL(snapshot.ref);
+
+                    // Update Auth and Firestore with the final URL.
+                    await updateProfile(user, { photoURL: finalUrl });
+                    await updateDoc(userDocRef, { profilePictureUrl: finalUrl });
+                    
+                    toast({
+                      title: 'Upload Complete!',
+                      description: 'Your new profile picture is saved.',
+                    });
+
+                } catch (error: any) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Image Upload Failed',
+                        description: 'Your new picture could not be saved. Please try again from the edit page.',
+                    });
+                }
+            };
+            // Execute the background task.
+            uploadAndUpdateUrl();
+        } else {
+             setIsSubmitting(false);
+        }
 
     } catch (error: any) {
+        setIsSubmitting(false);
         toast({
             variant: 'destructive',
             title: 'Update Failed',
@@ -315,7 +331,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const isSaveDisabled = !form.formState.isDirty && !localImagePreview;
+  const isSaveDisabled = !form.formState.isDirty || isSubmitting;
   const isEmailProvider = authUser?.providerData.some(p => p.providerId === 'password');
 
   return (
@@ -479,7 +495,8 @@ export default function EditProfilePage() {
               />
 
               <Button type="submit" size="lg" className="w-full font-bold" disabled={isSaveDisabled}>
-                Save Changes
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>
           </Form>
@@ -555,3 +572,5 @@ export default function EditProfilePage() {
     </div>
   );
 }
+
+    
