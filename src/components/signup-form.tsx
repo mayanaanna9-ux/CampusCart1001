@@ -20,10 +20,9 @@ import { Eye, EyeOff, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import { handleUserCreation } from '@/lib/user-creation';
 
 
 const formSchema = z.object({
@@ -66,28 +65,8 @@ export function SignUpForm() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      // This is the primary function for creating the user in Firebase Auth.
-      // If this succeeds, the user will be in the console.
-
-      // We can safely update the user's display name in Auth.
-      await updateProfile(user, { displayName: values.name });
-
-      // We will create their user profile document in firestore here as well.
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userProfile: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
-        id: user.uid,
-        email: user.email,
-        displayName: values.name || '',
-        username: values.username || '',
-        profilePictureUrl: user.photoURL || '',
-        createdAt: serverTimestamp(),
-        location: values.location || '',
-        contactNumber: values.contactNumber || '',
-      };
-      await setDoc(userDocRef, userProfile, { merge: true });
-
+      
+      await handleUserCreation(userCredential, firestore, values.name, values.username, values.location, values.contactNumber);
 
       toast({
         title: "Account created!",
