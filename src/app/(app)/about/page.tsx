@@ -1,6 +1,5 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserAvatar } from '@/components/user-avatar';
 import { ArrowLeft, Mail, Phone, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,10 +8,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 export default function AboutPage() {
-  const authorAvatar = PlaceHolderImages.find(p => p.id === 'avatar1');
 
   return (
     <div className="container mx-auto max-w-2xl p-4 md:p-6">
@@ -24,7 +23,11 @@ export default function AboutPage() {
       </Button>
       <Card>
         <CardHeader className="items-center text-center p-6">
-            <UserAvatar name="Phoebe Ayana A. Andal" avatarUrl={authorAvatar?.imageUrl} className="h-24 w-24 mb-4" />
+            <Avatar className="h-24 w-24 mb-4">
+                <AvatarFallback className="text-4xl font-headline bg-primary/20 text-primary">
+                    P
+                </AvatarFallback>
+            </Avatar>
             <CardTitle className="font-headline text-2xl">Phoebe Ayana A. Andal</CardTitle>
             <CardDescription>BSIT-CPT03 Student</CardDescription>
         </CardHeader>
