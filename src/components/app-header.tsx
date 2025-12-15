@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, ShoppingCart, User, LogOut, UserPlus, Search } from 'lucide-react';
+import { Bell, ShoppingCart, User, LogOut, UserPlus, Search, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
@@ -73,6 +73,13 @@ export function AppHeader() {
               <span className="sr-only">Browse</span>
             </Link>
           </Button>
+
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/about">
+              <Info className="h-5 w-5" />
+              <span className="sr-only">About</span>
+            </Link>
+          </Button>
           
           {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted" />
@@ -100,7 +107,7 @@ export function AppHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/profile/${user.uid}`}>
+                  <Link href="/profile">
                     <User className="mr-2" />
                     Profile
                   </Link>
