@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Bell, ShoppingCart, User, LogOut, UserPlus, Search, Info } from 'lucide-react';
@@ -13,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { UserAvatar } from './user-avatar';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';

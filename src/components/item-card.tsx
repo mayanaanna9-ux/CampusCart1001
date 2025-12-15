@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +8,8 @@ import type { Item, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { UserAvatar } from './user-avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 import { MoreVertical, Trash2, Pencil, ShoppingCart } from 'lucide-react';

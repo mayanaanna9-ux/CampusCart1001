@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -22,7 +23,8 @@ import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams, notFound } from 'next/navigation';
-import { useFirestore, useStorage, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useStorage, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';

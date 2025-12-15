@@ -14,7 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useAuth, useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { doc, deleteDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { updateProfile, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } from 'firebase/auth';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { UserAvatar } from '@/components/user-avatar';
@@ -6,7 +7,8 @@ import { ItemCard } from '@/components/item-card';
 import { Button } from '@/components/ui/button';
 import { Settings, Loader2, MessageSquare, Phone, Mail, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { collection, doc, query, where } from 'firebase/firestore';
 import type { UserProfile, Item, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';

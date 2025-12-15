@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProfilePicture } from "@/context/profile-picture-context";
-import { useUser } from "@/firebase";
+import { useUser } from "@/auth/use-user";
 
 type UserAvatarProps = {
     userId?: string;

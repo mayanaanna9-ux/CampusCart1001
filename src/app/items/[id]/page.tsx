@@ -1,10 +1,12 @@
 
+
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/auth/use-user';
 import { doc } from 'firebase/firestore';
 import type { Item, UserProfile } from '@/lib/types';
 import {
